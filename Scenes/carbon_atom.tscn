@@ -1,15 +1,17 @@
-[gd_scene load_steps=3 format=3 uid="uid://cuqbd52h64v2"]
+[gd_scene load_steps=4 format=3 uid="uid://cuqbd52h64v2"]
 
+[ext_resource type="Script" uid="uid://4s0jx5a4ilq1" path="res://Scripts/atom.gd" id="1_anieg"]
 [ext_resource type="Texture2D" uid="uid://ckek8sy5riimj" path="res://Sprites/Ncarbon.png" id="2_anieg"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_4vrmj"]
-radius = 16.0
+radius = 33.0
 
 [node name="Atom" type="RigidBody2D"]
 gravity_scale = 0.0
+script = ExtResource("1_anieg")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-scale = Vector2(0.1, 0.1)
+scale = Vector2(0.2, 0.2)
 texture = ExtResource("2_anieg")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
