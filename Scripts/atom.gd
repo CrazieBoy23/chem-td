@@ -16,3 +16,11 @@ func get_potential_well_depth():
 
 func get_equilibrum_bond_length():
 	return r_e
+
+func _ready():
+	input_pickable = true  # Enable mouse input picking
+
+func _input_event(viewport, event, shape_idx):
+	if event is InputEventMouseButton:
+		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			print("Atom clicked:", self.name)
