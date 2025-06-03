@@ -2,7 +2,6 @@ extends Node2D
 class_name AtomManager
 
 @export var start_atom: PackedScene
-#var atoms: Array[Atom]
 var bonds: Dictionary[Atom, Array] = {}
 
 # Morse potential parameters
@@ -30,10 +29,6 @@ func spawn_start():
 	start2.position = Vector2(470, 200)
 	start3.position = Vector2(410, 270)
 
-	#atoms.append(start1)
-	#atoms.append(start2)
-	#atoms.append(start3)
-
 	add_child(start1)
 	add_child(start2)
 	add_child(start3)
@@ -41,8 +36,6 @@ func spawn_start():
 	add_bond(start1, start2)
 	add_bond(start1, start3)
 	add_bond(start2, start3)
-	
-	start2.apply_central_impulse(Vector2(500, 0))
 
 func _physics_process(_delta):
 	var processed_pairs := {}
@@ -61,8 +54,7 @@ func _physics_process(_delta):
 			# Apply equal and opposite forces to both atoms
 			apply_bond_force(atom_a, atom_b)
 			if atom_a.id == 0:
-				atom_a.apply_central_force(Vector2(100, 0))
-	print("-------")
+				atom_a.apply_central_force(Vector2(-100, 0))
 
 func apply_bond_force(atom_a: Atom, atom_b: Atom):
 	#Morse potential and derivative of the force calculations
