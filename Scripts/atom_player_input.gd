@@ -11,22 +11,36 @@ enum ClickedState
 }
 var state: ClickedState = ClickedState.NOTCLICKED
 var clicked_atom: Atom = null
+var hovered_atom: Atom = null
 var mouse_pos: Vector2
 
 func atomClicked(clicked: Atom):
 	state = ClickedState.CLICKED
 	clicked_atom = clicked
 
+func atomHovered(hovered: Atom):
+	hovered_atom = hovered
+
 func _unhandled_input(event):
 	if event is InputEventMouseMotion:
 		mouse_pos = event.position
+		hovered_atom = null
 	if event is InputEventMouseButton:
 		if not event.pressed:
 			if state!=ClickedState.NOTCLICKED:
 				if state==ClickedState.EXTENDED:
-					spawn_atom()
+					handle_player_action()
 				state = ClickedState.NOTCLICKED
 				clicked_atom = null
+
+func handle_player_action():
+	if hovered_atom and hovered_atom!=clicked_atom:
+		if atom_physics.is_bonded(hovered_atom, clicked_atom):
+			atom_physics.break_bond(hovered_atom, clicked_atom)
+		else:
+			var added = atom_physics.try_add_bond(hovered_atom, clicked_atom)
+	else:
+		spawn_atom()
 
 func spawn_atom():
 	var delta_mouse = mouse_pos - clicked_atom.position

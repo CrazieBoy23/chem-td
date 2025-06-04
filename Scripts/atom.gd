@@ -1,14 +1,16 @@
 extends RigidBody2D
 class_name Atom
 
-@export var nr_connections: int = 4
+@export var max_connections: int = 4
 @export var D_e: int = 350       # Potential well depth
 @export var a: float = 0.05      # Width of the well
 @export var r_e: float = 100.0   # Equilibrium bond length
 @export var extended_modifier: float = 0.2
+@export var charge: float = 10
 
-# clickedCallback(Atom)
-var clickedCallback: Callable
+# atomClicked(Atom)
+var atomClicked: Callable
+var atomHovered: Callable
 
 func get_well_width():
 	return a
@@ -25,5 +27,6 @@ func _ready():
 func _input_event(viewport, event, shape_idx):
 	if event is InputEventMouseButton:
 		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			# print("Atom clicked:", self.name)
-			clickedCallback.call(self)
+			atomClicked.call(self)
+	elif event is InputEventMouseMotion:
+		atomHovered.call(self)
