@@ -3,6 +3,7 @@ class_name AtomPhysics
 
 @export var start_atom: PackedScene
 var bonds: Dictionary[Atom, Array] = {}
+@export var player_input: AtomPlayerInput
 
 func _ready():
 	spawn_start()
@@ -16,21 +17,20 @@ func add_bond(atom_a: Atom, atom_b: Atom):
 	bonds[atom_b].append(atom_a)
 	#lines.draw_line()
 
+func spawn_atom(pos: Vector2) -> Atom:
+	var atm = start_atom.instantiate() as Atom
+	atm.clickedCallback = player_input.atomClicked
+	atm.position = pos
+	add_child(atm)
+	return atm
+
 func spawn_start():
-	var start1 = start_atom.instantiate() as Atom
-	var start2 = start_atom.instantiate() as Atom
-	var start3 = start_atom.instantiate() as Atom
+	var start1 = spawn_atom(Vector2(350, 200))
+	var start2 = spawn_atom(Vector2(470, 200))
+	var start3 = spawn_atom(Vector2(410, 270))
 	start1.id = 1
 	start2.id = 2
 	start3.id = 3
-
-	start1.position = Vector2(350, 200)
-	start2.position = Vector2(470, 200)
-	start3.position = Vector2(410, 270)
-
-	add_child(start1)
-	add_child(start2)
-	add_child(start3)
 	
 	add_bond(start1, start2)
 	add_bond(start1, start3)

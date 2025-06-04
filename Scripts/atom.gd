@@ -8,6 +8,9 @@ class_name Atom
 @export var extended_modifier: float = 0.2
 var id: int
 
+# clickedCallback(Atom)
+var clickedCallback: Callable
+
 func get_well_width():
 	return a
 
@@ -23,4 +26,5 @@ func _ready():
 func _input_event(viewport, event, shape_idx):
 	if event is InputEventMouseButton:
 		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			print("Atom clicked:", self.name)
+			# print("Atom clicked:", self.name)
+			clickedCallback.call(self)
