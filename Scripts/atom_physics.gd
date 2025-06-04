@@ -66,8 +66,9 @@ func spawn_start():
 	add_bond(start1, start3)
 	add_bond(start2, start3)
 
+@export var chunk_size: int = 150
 func calculate_atom_chunk(atom: Atom) -> Vector2i:
-	return Vector2i(atom.position / 150)
+	return Vector2i(atom.position / chunk_size)
 
 func get_pair_key(atom_a: Atom, atom_b: Atom) -> String:
 	var id_a = atom_a.get_instance_id()
@@ -183,7 +184,6 @@ func apply_repel_force(atom_a: Atom, atom_b: Atom):
 
 	atom_b.apply_central_force(force)
 	atom_a.apply_central_force(-force)
-
 
 func _draw():
 	var drawn_pairs := {}
