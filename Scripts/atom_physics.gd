@@ -17,20 +17,21 @@ func add_bond(atom_a: Atom, atom_b: Atom):
 	bonds[atom_b].append(atom_a)
 	#lines.draw_line()
 
-func spawn_atom(pos: Vector2) -> Atom:
+func spawn_atom(pos: Vector2, bondTo: Atom = null) -> Atom:
 	var atm = start_atom.instantiate() as Atom
 	atm.clickedCallback = player_input.atomClicked
 	atm.position = pos
 	add_child(atm)
+	
+	if bondTo:
+		add_bond(atm, bondTo)
+	
 	return atm
 
 func spawn_start():
 	var start1 = spawn_atom(Vector2(350, 200))
 	var start2 = spawn_atom(Vector2(470, 200))
 	var start3 = spawn_atom(Vector2(410, 270))
-	start1.id = 1
-	start2.id = 2
-	start3.id = 3
 	
 	add_bond(start1, start2)
 	add_bond(start1, start3)
@@ -50,10 +51,6 @@ func _physics_process(_delta):
 			processed_pairs[pair_key] = true
 
 			apply_bond_force(atom_a, atom_b)
-			
-			# Optional: extra force to hold first atom
-			if atom_a.id == 0:
-				atom_a.apply_central_force(Vector2(-100, 0))
 
 func apply_bond_force(atom_a: Atom, atom_b: Atom):
 	var pos1 = atom_a.position

@@ -29,17 +29,13 @@ func _unhandled_input(event):
 				clicked_atom = null
 
 func spawn_atom():
-	print("WTF")
-	var delta_mouse = clicked_atom.position - mouse_pos
+	var delta_mouse = mouse_pos - clicked_atom.position
 	delta_mouse = delta_mouse.normalized()
 	delta_mouse = delta_mouse*clicked_atom.get_equilibrum_bond_length()
 	var spawn_pos = clicked_atom.position+delta_mouse
-	print(clicked_atom.position)
-	print(spawn_pos)
-	atom_physics.spawn_atom(spawn_pos)
+	atom_physics.spawn_atom(spawn_pos, clicked_atom)
 
 func _process(delta: float) -> void:
-	#print(state)
 	if state == ClickedState.NOTCLICKED:
 		return
 	var delta_mouse = clicked_atom.position - mouse_pos

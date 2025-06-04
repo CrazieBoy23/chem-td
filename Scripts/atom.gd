@@ -6,7 +6,6 @@ class_name Atom
 @export var a: float = 0.05      # Width of the well
 @export var r_e: float = 100.0   # Equilibrium bond length
 @export var extended_modifier: float = 0.2
-var id: int
 
 # clickedCallback(Atom)
 var clickedCallback: Callable
