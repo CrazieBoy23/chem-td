@@ -1,4 +1,5 @@
-extends RigidBody2D
+#extends RigidBody2D
+extends Node2D
 class_name Atom
 
 @export var max_connections: int = 4
@@ -8,7 +9,18 @@ class_name Atom
 @export var extended_modifier: float = 0.2
 @export var charge: float = 10
 
-# atomClicked(Atom)
+@export var mass: float = 12
+
+var radius: float = 0
+
+func _ready():
+	radius = $Area2D/CollisionShape2D.get_shape().radius
+
+var linear_velocity: Vector2 = Vector2.ZERO
+func apply_central_force(force: Vector2) -> void:
+	var acceleration = force / mass
+	linear_velocity += acceleration
+
 var atomClicked: Callable
 var atomHovered: Callable
 
@@ -20,13 +32,3 @@ func get_potential_well_depth():
 
 func get_equilibrum_bond_length():
 	return r_e
-
-func _ready():
-	input_pickable = true  # Enable mouse input picking
-
-func _input_event(viewport, event, shape_idx):
-	if event is InputEventMouseButton:
-		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			atomClicked.call(self)
-	elif event is InputEventMouseMotion:
-		atomHovered.call(self)

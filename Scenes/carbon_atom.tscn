@@ -1,15 +1,13 @@
-[gd_scene load_steps=4 format=3 uid="uid://cuqbd52h64v2"]
+[gd_scene load_steps=5 format=3 uid="uid://cuqbd52h64v2"]
 
 [ext_resource type="Script" uid="uid://4s0jx5a4ilq1" path="res://Scripts/atom.gd" id="1_anieg"]
 [ext_resource type="Texture2D" uid="uid://dsx100n1efhfl" path="res://Sprites/Ecarbon.png" id="2_anieg"]
+[ext_resource type="Script" uid="uid://bnghgrd6akugu" path="res://Scripts/atom_area.gd" id="3_5udwc"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_4vrmj"]
 radius = 33.0
 
-[node name="Carbon" type="RigidBody2D"]
-input_pickable = true
-gravity_scale = 0.0
-lock_rotation = true
+[node name="Carbon" type="Node2D"]
 script = ExtResource("1_anieg")
 D_e = 50000
 a = 0.03
@@ -18,5 +16,8 @@ a = 0.03
 scale = Vector2(0.2, 0.2)
 texture = ExtResource("2_anieg")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="Area2D" type="Area2D" parent="."]
+script = ExtResource("3_5udwc")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
 shape = SubResource("CircleShape2D_4vrmj")
