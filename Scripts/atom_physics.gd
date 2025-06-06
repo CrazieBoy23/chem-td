@@ -9,6 +9,9 @@ class_name AtomPhysics
 @export var break_bond_distance: float = 3.0
 @export var atom_damping: float = 0.95
 @export var bond_damping: float = 0.5
+@export var COLLISION_PASSES: int = 4
+@export var collision_correction_ratio: float = 0.3
+@export var collision_restitution: float = 0.2  # Soft bounce
 
 ## --- FIELDS ---
 var bonds: Dictionary[Atom, Array] = {}
@@ -82,30 +85,31 @@ func _physics_process(_delta):
 			else:
 				_apply_bond_force(atom_a, atom_b)
 
-	# Repel force (using 3x3 chunks)
-	var all_chunk_keys = chunks.keys()
-	for chunk_key in all_chunk_keys:
-		var chunk_atoms = chunks[chunk_key]
-		for i in range(chunk_atoms.size()):
-			var atom_a = chunk_atoms[i]
-			for offset_x in range(-1, 2):
-				for offset_y in range(-1, 2):
-					var neighbor_key = chunk_key + Vector2i(offset_x, offset_y)
-					if not chunks.has(neighbor_key):
-						continue
-					var neighbor_atoms = chunks[neighbor_key]
-					for atom_b in neighbor_atoms:
-						if atom_a == atom_b:
+	# Multi-pass repel force + collision resolution
+	for pass_i in COLLISION_PASSES:
+		var collision_pairs := {}
+		for chunk_key in chunks.keys():
+			var chunk_atoms = chunks[chunk_key]
+			for i in range(chunk_atoms.size()):
+				var atom_a = chunk_atoms[i]
+				for offset_x in range(-1, 2):
+					for offset_y in range(-1, 2):
+						var neighbor_key = chunk_key + Vector2i(offset_x, offset_y)
+						if not chunks.has(neighbor_key):
 							continue
-						var pair_key = _get_pair_key(atom_a, atom_b)
-						if processed_pairs.has(pair_key):
-							continue
-						processed_pairs[pair_key] = true
-						_apply_repel_force(atom_a, atom_b)
-						_resolve_collision(atom_a, atom_b)
-	
+						var neighbor_atoms = chunks[neighbor_key]
+						for atom_b in neighbor_atoms:
+							if atom_a == atom_b:
+								continue
+							var pair_key = _get_pair_key(atom_a, atom_b)
+							if collision_pairs.has(pair_key):
+								continue
+							collision_pairs[pair_key] = true
+							_apply_repel_force(atom_a, atom_b)
+							_resolve_collision(atom_a, atom_b)
+
 	_update_atom_positions(_delta)
-	
+
 	# Reassign atoms to new chunks
 	var new_chunks: Dictionary[Vector2i, Array] = {}
 	for chunk_atoms in chunks.values():
@@ -211,28 +215,29 @@ func _resolve_collision(atom_a: Atom, atom_b: Atom) -> void:
 	var min_dist = atom_a.radius + atom_b.radius
 
 	if dist == 0:
-		delta = Vector2(randf(), randf()).normalized()
+		delta = Vector2(randf() - 0.5, randf() - 0.5).normalized()
 		dist = 0.001
 
 	if dist < min_dist:
 		var overlap = min_dist - dist
 		var direction = delta / dist
-		# Push each atom away half the overlap:
-		atom_a.position -= direction * overlap * 0.5
-		atom_b.position += direction * overlap * 0.5
 
-		# Bounce effect (optional):
+		# Softer positional correction (less jitter)
+		atom_a.position -= direction * overlap * collision_correction_ratio
+		atom_b.position += direction * overlap * collision_correction_ratio
+
+		# Bounce effect with damped restitution
 		var relative_velocity = atom_b.linear_velocity - atom_a.linear_velocity
 		var vel_along_normal = relative_velocity.dot(direction)
 		if vel_along_normal > 0:
 			return
 
-		var restitution = 0.8
-		var impulse = (-(1 + restitution) * vel_along_normal) / 2.0
+		var impulse = (-(1 + collision_restitution) * vel_along_normal) / 2.0
 		var impulse_vec = direction * impulse
 
 		atom_a.linear_velocity -= impulse_vec
 		atom_b.linear_velocity += impulse_vec
+
 
 func _update_atom_positions(delta: float) -> void:
 	for chunk_atoms in chunks.values():

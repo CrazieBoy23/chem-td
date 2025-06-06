@@ -10,7 +10,6 @@
 script = ExtResource("1_a02cp")
 start_atom = ExtResource("2_go701")
 player_input = NodePath("../AtomPlayerInput")
-max_bond_dist_mult = 1.5
 break_bond_distance = 2.0
 
 [node name="AtomPlayerInput" type="Node" parent="." node_paths=PackedStringArray("atom_physics")]

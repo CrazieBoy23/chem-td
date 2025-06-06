@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://r7cjclk2grgo"
+path="res://.godot/imported/bond_compute.glsl-d81a14bc31072dfb132313c54da67251.res"
+
+[deps]
+
+source_file="res://Shaders/bond_compute.glsl"
+dest_files=["res://.godot/imported/bond_compute.glsl-d81a14bc31072dfb132313c54da67251.res"]
+
+[params]
+
