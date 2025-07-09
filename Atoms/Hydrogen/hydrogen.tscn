@@ -1,8 +1,8 @@
 [gd_scene load_steps=5 format=3 uid="uid://cb8pe82pk7cqh"]
 
-[ext_resource type="Script" uid="uid://4s0jx5a4ilq1" path="res://Common/AtomClass/atom.gd" id="1_hfylc"]
+[ext_resource type="Script" uid="uid://4s0jx5a4ilq1" path="res://Common/Godot/AtomClass/atom.gd" id="1_hfylc"]
 [ext_resource type="Texture2D" uid="uid://14hehwfhc7yg" path="res://Atoms/Hydrogen/Hydrogen.png" id="2_hfylc"]
-[ext_resource type="Script" uid="uid://bnghgrd6akugu" path="res://Common/AtomClass/atom_area.gd" id="3_ha7t3"]
+[ext_resource type="Script" uid="uid://bnghgrd6akugu" path="res://Common/Godot/AtomClass/atom_area.gd" id="3_ha7t3"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_0lv8e"]
 radius = 33.0

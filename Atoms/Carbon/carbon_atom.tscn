@@ -1,8 +1,8 @@
 [gd_scene load_steps=5 format=3 uid="uid://f176beebukii"]
 
-[ext_resource type="Script" uid="uid://4s0jx5a4ilq1" path="res://Common/AtomClass/atom.gd" id="1_anieg"]
+[ext_resource type="Script" uid="uid://4s0jx5a4ilq1" path="res://Common/Godot/AtomClass/atom.gd" id="1_anieg"]
 [ext_resource type="Texture2D" uid="uid://b7px8l4swfo8q" path="res://Atoms/Carbon/Carbon.png" id="2_121bk"]
-[ext_resource type="Script" uid="uid://bnghgrd6akugu" path="res://Common/AtomClass/atom_area.gd" id="3_5udwc"]
+[ext_resource type="Script" uid="uid://bnghgrd6akugu" path="res://Common/Godot/AtomClass/atom_area.gd" id="3_5udwc"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_4vrmj"]
 radius = 33.0

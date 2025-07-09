@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://bjnyax12f04it"]
 
-[ext_resource type="Script" uid="uid://4s0jx5a4ilq1" path="res://Common/AtomClass/atom.gd" id="1_bcbno"]
-[ext_resource type="Script" uid="uid://bnghgrd6akugu" path="res://Common/AtomClass/atom_area.gd" id="2_fxs12"]
+[ext_resource type="Script" uid="uid://4s0jx5a4ilq1" path="res://Common/Godot/AtomClass/atom.gd" id="1_bcbno"]
+[ext_resource type="Script" uid="uid://bnghgrd6akugu" path="res://Common/Godot/AtomClass/atom_area.gd" id="2_fxs12"]
 [ext_resource type="Texture2D" uid="uid://b3dq2poud23q1" path="res://Atoms/Lithium/Lithium.png" id="2_r4six"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_r4six"]
