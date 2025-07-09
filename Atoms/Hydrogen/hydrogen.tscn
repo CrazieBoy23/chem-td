@@ -1,0 +1,23 @@
+[gd_scene load_steps=5 format=3 uid="uid://cb8pe82pk7cqh"]
+
+[ext_resource type="Script" uid="uid://4s0jx5a4ilq1" path="res://Common/AtomClass/atom.gd" id="1_hfylc"]
+[ext_resource type="Texture2D" uid="uid://14hehwfhc7yg" path="res://Atoms/Hydrogen/Hydrogen.png" id="2_hfylc"]
+[ext_resource type="Script" uid="uid://bnghgrd6akugu" path="res://Common/AtomClass/atom_area.gd" id="3_ha7t3"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_0lv8e"]
+radius = 33.0
+
+[node name="Hydrogen" type="Node2D"]
+script = ExtResource("1_hfylc")
+max_connections = 1
+mass = 1.0
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("2_hfylc")
+
+[node name="Area2D" type="Area2D" parent="."]
+script = ExtResource("3_ha7t3")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+shape = SubResource("CircleShape2D_0lv8e")

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ckek8sy5riimj"
-path="res://.godot/imported/Ncarbon.png-20c80cdca9b4590e29dc245ecd1ed64a.ctex"
+uid="uid://14hehwfhc7yg"
+path="res://.godot/imported/Hydrogen.png-08ace162a1c7e8df12a6c4bcf136b7a4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Sprites/Ncarbon.png"
-dest_files=["res://.godot/imported/Ncarbon.png-20c80cdca9b4590e29dc245ecd1ed64a.ctex"]
+source_file="res://Atoms/Hydrogen/Hydrogen.png"
+dest_files=["res://.godot/imported/Hydrogen.png-08ace162a1c7e8df12a6c4bcf136b7a4.ctex"]
 
 [params]
 

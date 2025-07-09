@@ -1,0 +1,22 @@
+[gd_scene load_steps=5 format=3 uid="uid://c4hqo2htcp1w6"]
+
+[ext_resource type="Script" uid="uid://4s0jx5a4ilq1" path="res://Common/AtomClass/atom.gd" id="1_5c717"]
+[ext_resource type="Texture2D" uid="uid://cn34u0ofwlnyr" path="res://Atoms/Helium/Helium.png" id="2_f8ygf"]
+[ext_resource type="Script" uid="uid://bnghgrd6akugu" path="res://Common/AtomClass/atom_area.gd" id="2_g4oww"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_f8ygf"]
+radius = 33.0
+
+[node name="Helium" type="Node2D"]
+script = ExtResource("1_5c717")
+mass = 4.0
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("2_f8ygf")
+
+[node name="Area2D" type="Area2D" parent="."]
+script = ExtResource("2_g4oww")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+shape = SubResource("CircleShape2D_f8ygf")

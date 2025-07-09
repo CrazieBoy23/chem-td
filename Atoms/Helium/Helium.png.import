@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dsx100n1efhfl"
-path="res://.godot/imported/Ecarbon.png-391915204f5a091b60ab284e567245a7.ctex"
+uid="uid://cn34u0ofwlnyr"
+path="res://.godot/imported/Helium.png-a3b0f18f4d72fd80e5facf094d67de79.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Sprites/Ecarbon.png"
-dest_files=["res://.godot/imported/Ecarbon.png-391915204f5a091b60ab284e567245a7.ctex"]
+source_file="res://Atoms/Helium/Helium.png"
+dest_files=["res://.godot/imported/Helium.png-a3b0f18f4d72fd80e5facf094d67de79.ctex"]
 
 [params]
 

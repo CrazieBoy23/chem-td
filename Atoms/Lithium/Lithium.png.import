@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dagtrghxo2w4l"
-path="res://.godot/imported/Electron.png-26a5228c761513753f5846f1bbcd4efc.ctex"
+uid="uid://b3dq2poud23q1"
+path="res://.godot/imported/Lithium.png-baf4e887459c049e68aa065e029d0f4a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Sprites/Electron.png"
-dest_files=["res://.godot/imported/Electron.png-26a5228c761513753f5846f1bbcd4efc.ctex"]
+source_file="res://Atoms/Lithium/Lithium.png"
+dest_files=["res://.godot/imported/Lithium.png-baf4e887459c049e68aa065e029d0f4a.ctex"]
 
 [params]
 

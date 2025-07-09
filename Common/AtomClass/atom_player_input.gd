@@ -38,7 +38,7 @@ func handle_player_action():
 		if atom_physics.is_bonded(hovered_atom, clicked_atom):
 			atom_physics.break_bond(hovered_atom, clicked_atom)
 		else:
-			var added = atom_physics.try_add_bond(hovered_atom, clicked_atom)
+			atom_physics.try_add_bond(hovered_atom, clicked_atom)
 	else:
 		spawn_atom()
 
@@ -49,7 +49,7 @@ func spawn_atom():
 	var spawn_pos = clicked_atom.position+delta_mouse
 	atom_physics.spawn_atom(spawn_pos, clicked_atom)
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if state == ClickedState.NOTCLICKED:
 		return
 	var delta_mouse = clicked_atom.position - mouse_pos

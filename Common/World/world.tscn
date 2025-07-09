@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3 uid="uid://brj0yaqqavko7"]
+
+[ext_resource type="Script" uid="uid://7womc18lmkah" path="res://Common/AtomClass/atom_physics.gd" id="1_dnblr"]
+[ext_resource type="PackedScene" uid="uid://f176beebukii" path="res://Atoms/Carbon/carbon_atom.tscn" id="2_wri7m"]
+[ext_resource type="Script" uid="uid://dk75vtrfotfou" path="res://Common/AtomClass/atom_player_input.gd" id="3_ofibq"]
+
+[node name="Node2D" type="Node2D"]
+
+[node name="AtomPhysics" type="Node2D" parent="." node_paths=PackedStringArray("player_input")]
+script = ExtResource("1_dnblr")
+start_atom = ExtResource("2_wri7m")
+player_input = NodePath("../AtomPlayerInput")
+max_bond_dist_mult = 1.5
+break_bond_distance = 2.0
+
+[node name="AtomPlayerInput" type="Node" parent="." node_paths=PackedStringArray("atom_physics")]
+script = ExtResource("3_ofibq")
+atom_physics = NodePath("../AtomPhysics")
