@@ -29,7 +29,7 @@ public class AtomPhysics
         chunks = new Dictionary<ChunkCoord, ChunkHolder>();
     }
 
-    public bool AddAtom(AtomInstance atom)
+    public bool AddAtomToChunk(AtomInstance atom)
     {
         ChunkCoord chunkCoord = GetChunkCoord(atom); //new ChunkCoord((int)(atom.position.x / chunkSize.x), (int)(atom.position.y / chunkSize.y));
         if (!chunks.ContainsKey(chunkCoord))
@@ -40,6 +40,38 @@ public class AtomPhysics
         return true;
     }
 
+    public void Simulate(float delta)
+    {
+        // test
+        foreach (var kvp in chunks)
+        {
+            foreach (var atom in kvp.Value)
+            {
+                atom.velocity += new Vector2(0, 9.81f) * delta; // Simple gravity effect
+            }
+        }
+
+        // update positions of atoms in each chunk
+        foreach (var kvp in chunks)
+        {
+            foreach (var atom in kvp.Value)
+            {
+                ChunkCoord oldChunk = kvp.Key;
+                atom.position += atom.velocity * delta;
+                ChunkCoord newChunk = GetChunkCoord(atom);
+                if (oldChunk != newChunk)
+                {
+                    // Atom has moved to a new chunk, remove it from the old chunk
+                    kvp.Value.Remove(atom);
+                    // Add it to the new chunk
+                    AddAtomToChunk(atom);
+                    GD.Print($"Atom moved from {oldChunk} to {newChunk}");
+                }
+            }
+        }
+    }
+
+    // helpers
     ChunkCoord GetChunkCoord(AtomInstance atom)
     {
         return new ChunkCoord((int)(atom.position.X / chunkSize.X), (int)(atom.position.Y / chunkSize.Y));

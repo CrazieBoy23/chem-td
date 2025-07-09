@@ -5,27 +5,32 @@ using System.Collections.Generic;
 using Atom = Godot.Node2D;
 public partial class AtomSimulator : Node
 {
-	[Export] public Vector2 ChunkSize = new Vector2(100, 100);
-	Dictionary<string, Atom> atoms = new Dictionary<string, Atom>();
+	[Export] public Vector2 ChunkSize = new Vector2(400, 400);
+	PackedScene carbonAtomScene;
 
-	
+
+	Dictionary<string, Atom> atoms = new Dictionary<string, Atom>();
+	AtomPhysics atomPhysics;
+
+	public AtomSimulator()
+	{
+		atomHovered = new Callable(this, nameof(OnAtomHovered));
+		atomClicked = new Callable(this, nameof(OnAtomClicked));
+		carbonAtomScene = ResourceLoader.Load<PackedScene>("res://Atoms/Carbon/carbon_atom.tscn");
+		atomPhysics = new AtomPhysics(ChunkSize);
+	}
 
 	public override void _Ready()
 	{
-		// var atomScript = GD.Load<GDScript>("res://Atoms/Carbon/carbon_atom.tscn");
-		// var atomNode = (Atom)atomScript.New();
-		atomHovered = new Callable(this, nameof(OnAtomHovered));
-		atomClicked = new Callable(this, nameof(OnAtomClicked));
-
-		var atomNode = (Atom)ResourceLoader.Load<PackedScene>("res://Atoms/Carbon/carbon_atom.tscn").Instantiate();
+		var atomNode = (Atom)carbonAtomScene.Instantiate();
 		AddChild(atomNode);
-		atomNode.Position = new Vector2(500, 500);
+		atomNode.Position = new Vector2(500, 0);
 
-		AtomPhysics ap = new AtomPhysics(ChunkSize);
+		
 		var atom = CreateAtomInstance(atomNode);
-		ap.AddAtom(atom);
+		atomPhysics.AddAtomToChunk(atom);
 
-		foreach (var chHolder in ap.chunks.Values)
+		foreach (var chHolder in atomPhysics.chunks.Values)
 		{
 			foreach (var atm in chHolder)
 			{
@@ -33,6 +38,29 @@ public partial class AtomSimulator : Node
 			}
 		}
 	}
+
+	public override void _PhysicsProcess(double delta)
+	{
+		atomPhysics.Simulate((float)delta);
+	}
+
+	public override void _Process(double delta)
+	{
+		foreach (var chunk in atomPhysics.chunks.Values)
+		{
+			foreach (var atom in chunk)
+			{
+				// Update the position of the atom's node
+				if (atom.node != null)
+				{
+					atom.node.Position = atom.position;
+				}
+			}
+		}
+	}
+
+
+
 
 	public Callable atomHovered;
 	void OnAtomHovered(Atom atom)
