@@ -97,7 +97,7 @@ public static class AtomPhysicsGPU
         var outputBytes = rd.BufferGetData(atomBuffer);
         float[] output = new float[atomData.Length];
         Buffer.BlockCopy(outputBytes, 0, output, 0, outputBytes.Length);
-
+        GD.Print("CAlculated " + allAtoms.Count + " atoms");
         // Update atom instances
         for (int i = 0; i < allAtoms.Count; i++)
         {
@@ -106,11 +106,10 @@ public static class AtomPhysicsGPU
         }
 
         // Free resources
-        rd.FreeRid(atomBuffer);
-        rd.FreeRid(chunkInfoBuffer);
-        rd.FreeRid(pipeline);
-        rd.FreeRid(uniformSet);
-        rd.FreeRid(shader);
+        if (atomBuffer.IsValid) rd.FreeRid(atomBuffer);
+        if (chunkInfoBuffer.IsValid) rd.FreeRid(chunkInfoBuffer);
+        if (pipeline.IsValid) rd.FreeRid(pipeline);
+        if (shader.IsValid) rd.FreeRid(shader);
         rd.Free();
     }
 }

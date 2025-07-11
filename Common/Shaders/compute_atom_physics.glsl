@@ -45,8 +45,8 @@ void main() {
 
     // Find which chunk this atom belongs to
     int my_chunk = -1;
-    int num_chunks = int(length(chunk_info) / 2);
-    for (int c = 0; c < num_chunks; ++c) {
+    int num_chunks = int(chunk_info.length() / 2);
+    for (int c = 1; c <= num_chunks; ++c) {
         int start = chunk_info[c * 2 + 0];
         int count = chunk_info[c * 2 + 1];
         if (atom_index >= uint(start) && atom_index < uint(start + count)) {
@@ -57,8 +57,8 @@ void main() {
     if (my_chunk == -1) return;
 
     // Repel and collision with atoms in this chunk and neighbors
-    float2 pos = float2(pos_x, pos_y);
-    float2 vel = float2(vel_x, vel_y);
+    vec2 pos = vec2(pos_x, pos_y);
+    vec2 vel = vec2(vel_x, vel_y);
     for (int dc = -1; dc <= 1; ++dc) {
         int neighbor_chunk = my_chunk + dc;
         if (neighbor_chunk < 0 || neighbor_chunk >= num_chunks) continue;
@@ -69,9 +69,9 @@ void main() {
             if (other_idx == atom_index) continue;
             float o_pos_x, o_pos_y, o_vel_x, o_vel_y, o_mass, o_charge, o_radius;
             get_atom(other_idx, o_pos_x, o_pos_y, o_vel_x, o_vel_y, o_mass, o_charge, o_radius);
-            float2 o_pos = float2(o_pos_x, o_pos_y);
-            float2 o_vel = float2(o_vel_x, o_vel_y);
-            float2 delta = o_pos - pos;
+            vec2 o_pos = vec2(o_pos_x, o_pos_y);
+            vec2 o_vel = vec2(o_vel_x, o_vel_y);
+            vec2 delta = o_pos - pos;
             float dist = length(delta);
             float minDist = radius + o_radius;
             if (dist > 0.0) {
@@ -79,21 +79,21 @@ void main() {
                 float k = 1000.0;
                 float forceMag = k * charge * o_charge / (dist * dist + 1e-4);
                 if (forceMag > 0.0) {
-                    float2 force = normalize(delta) * forceMag;
+                    vec2 force = normalize(delta) * forceMag;
                     vel -= force / mass;
                 }
                 // Collision
                 if (dist < minDist) {
                     float overlap = minDist - dist;
-                    float2 direction = delta / dist;
+                    vec2 direction = delta / dist;
                     pos -= direction * overlap * 0.5;
                     // Simple bounce
-                    float2 relVel = o_vel - vel;
+                    vec2 relVel = o_vel - vel;
                     float velAlongNormal = dot(relVel, direction);
                     if (velAlongNormal < 0.0) {
                         float restitution = 0.8;
                         float impulse = -(1.0 + restitution) * velAlongNormal / 2.0;
-                        float2 impulseVec = direction * impulse;
+                        vec2 impulseVec = direction * impulse;
                         vel -= impulseVec;
                     }
                 }
