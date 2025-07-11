@@ -16,19 +16,5 @@ var radius: float = 0
 func _ready():
 	radius = $Area2D/CollisionShape2D.get_shape().radius
 
-var linear_velocity: Vector2 = Vector2.ZERO
-func apply_central_force(force: Vector2) -> void:
-	var acceleration = force / mass
-	linear_velocity += acceleration
-
 var atomClicked: Callable
 var atomHovered: Callable
-
-func get_well_width():
-	return a
-
-func get_potential_well_depth():
-	return D_e
-
-func get_equilibrum_bond_length():
-	return r_e

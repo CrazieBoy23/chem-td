@@ -6,6 +6,7 @@ using System.Linq;
 using AtomNode = Godot.Node2D;
 public partial class AtomSimulator : Node
 {
+	[Export] public Node2D PlayerInputNode;
 	[Export] public Vector2 ChunkSize = new Vector2(400, 400);
 	[Export] public float BreakBondDistance = 3f;
 	PackedScene carbonAtomScene;
@@ -18,28 +19,18 @@ public partial class AtomSimulator : Node
 	{
 		atomHovered = new Callable(this, nameof(OnAtomHovered));
 		atomClicked = new Callable(this, nameof(OnAtomClicked));
+
+
 		carbonAtomScene = ResourceLoader.Load<PackedScene>("res://Atoms/Carbon/carbon_atom.tscn");
 		atomPhysics = new AtomPhysics(ChunkSize, BreakBondDistance);
 	}
 
 	public override void _Ready()
 	{
-		var atomNode1 = (AtomNode)carbonAtomScene.Instantiate();
-		AddChild(atomNode1);
-		atomNode1.Position = new Vector2(350, 200);
+		var atom1 = CreateAtomInstance(carbonAtomScene, new Vector2(350, 200));
+		var atom2 = CreateAtomInstance(carbonAtomScene, new Vector2(470, 200));
+		var atom3 = CreateAtomInstance(carbonAtomScene, new Vector2(410, 270));
 
-		var atomNode2 = (AtomNode)carbonAtomScene.Instantiate();
-		AddChild(atomNode2);
-		atomNode2.Position = new Vector2(470, 200);
-
-		var atomNode3 = (AtomNode)carbonAtomScene.Instantiate();
-		AddChild(atomNode3);
-		atomNode3.Position = new Vector2(410, 270);
-
-		
-		var atom1 = CreateAtomInstance(atomNode1);
-		var atom2 = CreateAtomInstance(atomNode2);
-		var atom3 = CreateAtomInstance(atomNode3);
 		atomPhysics.AddAtomToChunk(atom1);
 		atomPhysics.AddAtomToChunk(atom2);
 		atomPhysics.AddAtomToChunk(atom3);
@@ -86,7 +77,7 @@ public partial class AtomSimulator : Node
 	public Callable atomHovered;
 	void OnAtomHovered(AtomNode atom)
 	{
-		
+
 	}
 
 	public Callable atomClicked;
@@ -104,10 +95,13 @@ public partial class AtomSimulator : Node
 		}
 	}
 
-	AtomInstance CreateAtomInstance(AtomNode atomNode)
+	AtomInstance CreateAtomInstance(PackedScene atomScene, Vector2 position)
 	{
+		var atomNode = (AtomNode)atomScene.Instantiate();
+		atomNode.Position = position;
 		atomNode.Set("atomHovered", atomHovered);
 		atomNode.Set("atomClicked", atomClicked);
+		AddChild(atomNode);
 		var inst = new AtomInstance
 		{
 			position = atomNode.Position,
