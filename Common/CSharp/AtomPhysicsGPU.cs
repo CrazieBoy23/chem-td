@@ -48,11 +48,12 @@ public static class AtomPhysicsGPU
 
         // Chunk info buffer: [startIndex, count] for each chunk
         int[] chunkInfoData = new int[chunkInfos.Count * 2];
-        for (int i = 0; i < chunkInfos.Count; i++)
+        for (int i = 1; i <= chunkInfos.Count; i++)
         {
             chunkInfoData[i * 2 + 0] = chunkInfos[i].startIndex;
             chunkInfoData[i * 2 + 1] = chunkInfos[i].count;
         }
+        chunkInfoData[0] = chunkInfos.Count; // Store the number of chunks at the start
         byte[] chunkInfoBytes = new byte[chunkInfoData.Length * sizeof(int)];
         Buffer.BlockCopy(chunkInfoData, 0, chunkInfoBytes, 0, chunkInfoBytes.Length);
 
