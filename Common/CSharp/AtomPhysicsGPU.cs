@@ -47,14 +47,14 @@ public static class AtomPhysicsGPU
         Buffer.BlockCopy(atomData, 0, atomBytes, 0, atomBytes.Length);
 
         // Chunk info buffer: [startIndex, count] for each chunk
-        int[] chunkInfoData = new int[chunkInfos.Count * 2];
+        int[] chunkInfoData = new int[(chunkInfos.Count+1) * 2];
         for (int i = 1; i <= chunkInfos.Count; i++)
         {
-            chunkInfoData[i * 2 + 0] = chunkInfos[i].startIndex;
-            chunkInfoData[i * 2 + 1] = chunkInfos[i].count;
+            chunkInfoData[i * 2 + 0] = chunkInfos[i-1].startIndex;
+            chunkInfoData[i * 2 + 1] = chunkInfos[i-1].count;
         }
         chunkInfoData[0] = chunkInfos.Count; // Store the number of chunks at the start
-        byte[] chunkInfoBytes = new byte[chunkInfoData.Length * sizeof(int)];
+        byte[] chunkInfoBytes = new byte[(chunkInfoData.Length) * sizeof(int)];
         Buffer.BlockCopy(chunkInfoData, 0, chunkInfoBytes, 0, chunkInfoBytes.Length);
 
         // Create storage buffers
@@ -98,7 +98,7 @@ public static class AtomPhysicsGPU
         var outputBytes = rd.BufferGetData(atomBuffer);
         float[] output = new float[atomData.Length];
         Buffer.BlockCopy(outputBytes, 0, output, 0, outputBytes.Length);
-        GD.Print("CAlculated " + allAtoms.Count + " atoms");
+
         // Update atom instances
         for (int i = 0; i < allAtoms.Count; i++)
         {
@@ -107,10 +107,10 @@ public static class AtomPhysicsGPU
         }
 
         // Free resources
-        if (atomBuffer.IsValid) rd.FreeRid(atomBuffer);
-        if (chunkInfoBuffer.IsValid) rd.FreeRid(chunkInfoBuffer);
-        if (pipeline.IsValid) rd.FreeRid(pipeline);
-        if (shader.IsValid) rd.FreeRid(shader);
+        rd.FreeRid(atomBuffer);
+        rd.FreeRid(chunkInfoBuffer);
+        rd.FreeRid(pipeline);
+        rd.FreeRid(shader);
         rd.Free();
     }
 }
