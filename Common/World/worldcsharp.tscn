@@ -1,8 +1,14 @@
-[gd_scene load_steps=2 format=3 uid="uid://c8c2pmfkwnm68"]
+[gd_scene load_steps=3 format=3 uid="uid://c8c2pmfkwnm68"]
 
 [ext_resource type="Script" uid="uid://bj7kdes55ayrq" path="res://Common/CSharp/AtomSimulator.cs" id="1_6oxfm"]
+[ext_resource type="Script" uid="uid://dk75vtrfotfou" path="res://Common/Godot/AtomClass/atom_player_input.gd" id="2_hldig"]
 
 [node name="Worldcsharp" type="Node2D"]
 
-[node name="AtomSimulator" type="Node2D" parent="."]
+[node name="AtomSimulator" type="Node2D" parent="." node_paths=PackedStringArray("AtomPlayerInput")]
 script = ExtResource("1_6oxfm")
+AtomPlayerInput = NodePath("../AtomPlayerInput")
+
+[node name="AtomPlayerInput" type="Node" parent="."]
+script = ExtResource("2_hldig")
+metadata/_custom_type_script = "uid://dk75vtrfotfou"

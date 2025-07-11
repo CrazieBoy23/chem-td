@@ -166,10 +166,9 @@ public class AtomPhysics
 		return (atomA.r_e + atomB.r_e) * 0.5f;
 	}
 
-	private void BreakBond(AtomInstance atomA, AtomInstance atomB)
+	public bool BreakBond(AtomInstance atomA, AtomInstance atomB)
 	{
-		atomA.bonds.Remove(atomB);
-		atomB.bonds.Remove(atomA);
+		return atomA.bonds.Remove(atomB) || atomB.bonds.Remove(atomA);
 	}
 
 	private void ApplyBondForce(AtomInstance atomA, AtomInstance atomB)
@@ -298,5 +297,12 @@ public class AtomPhysics
 	public ChunkCoord GetChunkCoord(Vector2 position) //AtomInstance atom
 	{
 		return new ChunkCoord((int)(position.X / chunkSize.X), (int)(position.Y / chunkSize.Y));
+	}
+
+	// stuff
+	public bool IsBonded(AtomInstance atomA, AtomInstance atomB)
+	{
+		if (atomA == null || atomB == null) return false;
+		return atomA.bonds.Contains(atomB) || atomB.bonds.Contains(atomA);
 	}
 }

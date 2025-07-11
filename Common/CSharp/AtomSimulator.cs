@@ -2,11 +2,13 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
 using AtomNode = Godot.Node2D;
+using Vector2 = Godot.Vector2;
 public partial class AtomSimulator : Node
 {
-	[Export] public Node2D PlayerInputNode;
+	[Export] public Node AtomPlayerInput;
 	[Export] public Vector2 ChunkSize = new Vector2(400, 400);
 	[Export] public float BreakBondDistance = 3f;
 	PackedScene carbonAtomScene;
@@ -20,20 +22,49 @@ public partial class AtomSimulator : Node
 		atomHovered = new Callable(this, nameof(OnAtomHovered));
 		atomClicked = new Callable(this, nameof(OnAtomClicked));
 
-
 		carbonAtomScene = ResourceLoader.Load<PackedScene>("res://Atoms/Carbon/carbon_atom.tscn");
 		atomPhysics = new AtomPhysics(ChunkSize, BreakBondDistance);
 	}
 
+
+	public bool IsBonded(AtomNode atom1n, AtomNode atom2n)
+	{
+		var atom1 = atomPhysics.GetAtomByNode(atom1n);
+		var atom2 = atomPhysics.GetAtomByNode(atom2n);
+		return atomPhysics.IsBonded(atom1, atom2);
+	}
+	public bool TryAddBond(AtomNode atom1n, AtomNode atom2n)
+	{
+		var atom1 = atomPhysics.GetAtomByNode(atom1n);
+		var atom2 = atomPhysics.GetAtomByNode(atom2n);
+		return atomPhysics.AddBond(atom1, atom2);
+	}
+	public bool BreakBond(AtomNode atom1n, AtomNode atom2n)
+	{
+		var atom1 = atomPhysics.GetAtomByNode(atom1n);
+		var atom2 = atomPhysics.GetAtomByNode(atom2n);
+		return atomPhysics.BreakBond(atom1, atom2);
+	}
+
+	public bool SpawnAtom(Vector2 spawnPos, AtomNode clickedAtom)
+	{
+		var inst = CreateAtomInstance(carbonAtomScene, spawnPos);
+		atomPhysics.AddBond(atomPhysics.GetAtomByNode(clickedAtom), inst);
+
+		return true;
+	}
+
 	public override void _Ready()
 	{
+		AtomPlayerInput.Call("setup",
+			new Callable(this, nameof(IsBonded)),
+			new Callable(this, nameof(TryAddBond)),
+			new Callable(this, nameof(BreakBond)),
+			new Callable(this, nameof(SpawnAtom)));
+
 		var atom1 = CreateAtomInstance(carbonAtomScene, new Vector2(350, 200));
 		var atom2 = CreateAtomInstance(carbonAtomScene, new Vector2(470, 200));
 		var atom3 = CreateAtomInstance(carbonAtomScene, new Vector2(410, 270));
-
-		atomPhysics.AddAtomToChunk(atom1);
-		atomPhysics.AddAtomToChunk(atom2);
-		atomPhysics.AddAtomToChunk(atom3);
 
 		atomPhysics.AddBond(atom1, atom2);
 		atomPhysics.AddBond(atom1, atom3);
@@ -71,28 +102,16 @@ public partial class AtomSimulator : Node
 		}
 	}
 
-
-
-
 	public Callable atomHovered;
 	void OnAtomHovered(AtomNode atom)
 	{
-
+		AtomPlayerInput.Call("atomHovered", atom);
 	}
 
 	public Callable atomClicked;
 	void OnAtomClicked(AtomNode atom)
 	{
-		DeleteAtom(atom);
-	}
-
-	void DeleteAtom(AtomNode atom)
-	{
-		var atm = atomPhysics.GetAtomByNode(atom);
-		if (atm != null)
-		{
-			atomPhysics.RemoveAtom(atm);
-		}
+		AtomPlayerInput.Call("atomClicked", atom);
 	}
 
 	AtomInstance CreateAtomInstance(PackedScene atomScene, Vector2 position)
@@ -117,6 +136,7 @@ public partial class AtomSimulator : Node
 			node = atomNode,
 			bonds = new List<AtomInstance>(),
 		};
+		atomPhysics.AddAtomToChunk(inst);
 		return inst;
 	}
 }
