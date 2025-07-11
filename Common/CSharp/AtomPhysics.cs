@@ -91,17 +91,13 @@ public class AtomPhysics
 	public void Simulate(float delta)
 	{
 		// --- Bond Processing ---
-		var processedPairs = new HashSet<string>();
 		foreach (var kvp in chunks)
 		{
 			foreach (var atomA in kvp.Value.ToList())
 			{
 				foreach (var atomB in atomA.bonds.ToList())
 				{
-					string pairKey = GetPairKey(atomA, atomB);
-					if (processedPairs.Contains(pairKey))
-						continue;
-					processedPairs.Add(pairKey);
+					if (atomA.GetHashCode() > atomB.GetHashCode()) continue; // Ensure each pair is processed only once
 
 					float dist = (atomA.position - atomB.position).Length();
 					float meanBondLength = GetMeanBondLength(atomA, atomB);
@@ -119,7 +115,7 @@ public class AtomPhysics
 
 		// --- Repel force (using 3x3 chunks) ---
 		var allChunkKeys = chunks.Keys.ToList();
-		processedPairs.Clear();
+		//processedPairs.Clear();
 		foreach (var chunkKey in allChunkKeys)
 		{
 			if (!chunks.ContainsKey(chunkKey)) continue;
@@ -137,9 +133,7 @@ public class AtomPhysics
 						foreach (var atomB in neighborAtoms)
 						{
 							if (atomA == atomB) continue;
-							string pairKey = GetPairKey(atomA, atomB);
-							if (processedPairs.Contains(pairKey)) continue;
-							processedPairs.Add(pairKey);
+							if (atomA.GetHashCode() > atomB.GetHashCode()) continue;
 							ApplyRepelForce(atomA, atomB);
 							ResolveCollision(atomA, atomB);
 						}
@@ -167,13 +161,6 @@ public class AtomPhysics
 	}
 
 	// --- PRIVATE HELPERS ---
-	private string GetPairKey(AtomInstance atomA, AtomInstance atomB)
-	{
-		int idA = atomA.GetHashCode();
-		int idB = atomB.GetHashCode();
-		return idA < idB ? $"{idA}:{idB}" : $"{idB}:{idA}";
-	}
-
 	private float GetMeanBondLength(AtomInstance atomA, AtomInstance atomB)
 	{
 		return (atomA.r_e + atomB.r_e) * 0.5f;
@@ -255,7 +242,7 @@ public class AtomPhysics
 			if (velAlongNormal > 0) return;
 
 			float restitution = 0.8f;
-			float impulse = (-(1 + restitution) * velAlongNormal) / 2.0f;
+			float impulse = -(1 + restitution) * velAlongNormal / 2.0f;
 			var impulseVec = direction * impulse;
 
 			atomA.velocity -= impulseVec;

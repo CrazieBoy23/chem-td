@@ -59,7 +59,10 @@ public partial class AtomSimulator : Node
 
 	public override void _PhysicsProcess(double delta)
 	{
+		var startTime = Time.GetTicksUsec();
 		atomPhysics.Simulate((float)delta);
+		var endTime = Time.GetTicksUsec();
+		GD.Print($"Physics step took {(endTime - startTime) / 1000.0} ms");
 	}
 
 	public override void _Process(double delta)
