@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://dy27s4dvkb5ef"
+path="res://.godot/imported/compute_atom_physics.glsl-c0fe5aad05f559c89ca9b61f49d542d9.res"
+
+[deps]
+
+source_file="res://Common/Shaders/compute_atom_physics.glsl"
+dest_files=["res://.godot/imported/compute_atom_physics.glsl-c0fe5aad05f559c89ca9b61f49d542d9.res"]
+
+[params]
+

@@ -8,6 +8,7 @@
 [node name="AtomSimulator" type="Node2D" parent="." node_paths=PackedStringArray("AtomPlayerInput")]
 script = ExtResource("1_6oxfm")
 AtomPlayerInput = NodePath("../AtomPlayerInput")
+breakBondDistance = 1.75
 
 [node name="AtomPlayerInput" type="Node" parent="."]
 script = ExtResource("2_hldig")

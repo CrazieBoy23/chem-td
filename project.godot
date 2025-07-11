@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="ChemTd"
-run/main_scene="uid://c8c2pmfkwnm68"
+run/main_scene="uid://1ehnn3aek5bh"
 config/features=PackedStringArray("4.4", "C#", "Forward Plus")
 
 [dotnet]
@@ -21,3 +21,7 @@ project/assembly_name="ChemTd"
 [global_group]
 
 atom=""
+
+[rendering]
+
+renderer/rendering_method="mobile"

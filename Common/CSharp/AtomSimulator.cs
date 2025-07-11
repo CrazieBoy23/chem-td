@@ -10,7 +10,7 @@ public partial class AtomSimulator : Node2D
 {
 	[Export] public Node AtomPlayerInput;
 	[Export] public Vector2 ChunkSize = new Vector2(400, 400);
-	[Export] public float BreakBondDistance = 3f;
+	[Export] public float breakBondDistance = 1.5f; // 1.5x the mean bond length
 	PackedScene carbonAtomScene;
 
 
@@ -23,7 +23,6 @@ public partial class AtomSimulator : Node2D
 		atomClicked = new Callable(this, nameof(OnAtomClicked));
 
 		carbonAtomScene = ResourceLoader.Load<PackedScene>("res://Atoms/Carbon/carbon_atom.tscn");
-		atomPhysics = new AtomPhysics(ChunkSize, BreakBondDistance);
 	}
 
 
@@ -56,6 +55,8 @@ public partial class AtomSimulator : Node2D
 
 	public override void _Ready()
 	{
+		atomPhysics = new AtomPhysics(ChunkSize, breakBondDistance);
+
 		AtomPlayerInput.Call("setup",
 			new Callable(this, nameof(IsBonded)),
 			new Callable(this, nameof(TryAddBond)),
@@ -81,10 +82,10 @@ public partial class AtomSimulator : Node2D
 
 	public override void _PhysicsProcess(double delta)
 	{
-		var startTime = Time.GetTicksUsec();
+		// var startTime = Time.GetTicksUsec();
 		atomPhysics.Simulate((float)delta);
-		var endTime = Time.GetTicksUsec();
-		GD.Print($"Physics step took {(endTime - startTime) / 1000.0} ms");
+		// var endTime = Time.GetTicksUsec();
+		// GD.Print($"Physics step took {(endTime - startTime) / 1000.0} ms");
 	}
 
 	public override void _Process(double delta)
@@ -149,7 +150,8 @@ public partial class AtomSimulator : Node2D
 			{
 				foreach (var atomB in atomA.bonds.ToList())
 				{
-					if (atomA.node != null && atomB.node != null && atomA.GetHashCode() < atomB.GetHashCode())
+					if (atomA.GetHashCode() < atomB.GetHashCode()) continue;
+					if (atomA.node != null && atomB.node != null)
 					{
 						DrawLine(atomA.node.Position, atomB.node.Position, Colors.White, 2);
 					}
