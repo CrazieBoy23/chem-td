@@ -6,7 +6,7 @@ using System.Numerics;
 
 using AtomNode = Godot.Node2D;
 using Vector2 = Godot.Vector2;
-public partial class AtomSimulator : Node
+public partial class AtomSimulator : Node2D
 {
 	[Export] public Node AtomPlayerInput;
 	[Export] public Vector2 ChunkSize = new Vector2(400, 400);
@@ -100,6 +100,7 @@ public partial class AtomSimulator : Node
 				}
 			}
 		}
+		QueueRedraw();
 	}
 
 	public Callable atomHovered;
@@ -138,5 +139,22 @@ public partial class AtomSimulator : Node
 		};
 		atomPhysics.AddAtomToChunk(inst);
 		return inst;
+	}
+
+	public override void _Draw()
+	{
+		foreach (var kvp in atomPhysics.chunks)
+		{
+			foreach (var atomA in kvp.Value.ToList())
+			{
+				foreach (var atomB in atomA.bonds.ToList())
+				{
+					if (atomA.node != null && atomB.node != null && atomA.GetHashCode() < atomB.GetHashCode())
+					{
+						DrawLine(atomA.node.Position, atomB.node.Position, Colors.White, 2);
+					}
+				}
+			}
+		}
 	}
 }
