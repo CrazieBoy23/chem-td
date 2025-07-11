@@ -1,15 +1,17 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
-using Atom = Godot.Node2D;
+using AtomNode = Godot.Node2D;
 public partial class AtomSimulator : Node
 {
 	[Export] public Vector2 ChunkSize = new Vector2(400, 400);
+	[Export] public float BreakBondDistance = 3f;
 	PackedScene carbonAtomScene;
 
 
-	Dictionary<string, Atom> atoms = new Dictionary<string, Atom>();
+	Dictionary<string, AtomNode> atoms = new Dictionary<string, AtomNode>();
 	AtomPhysics atomPhysics;
 
 	public AtomSimulator()
@@ -17,12 +19,12 @@ public partial class AtomSimulator : Node
 		atomHovered = new Callable(this, nameof(OnAtomHovered));
 		atomClicked = new Callable(this, nameof(OnAtomClicked));
 		carbonAtomScene = ResourceLoader.Load<PackedScene>("res://Atoms/Carbon/carbon_atom.tscn");
-		atomPhysics = new AtomPhysics(ChunkSize);
+		atomPhysics = new AtomPhysics(ChunkSize, BreakBondDistance);
 	}
 
 	public override void _Ready()
 	{
-		var atomNode = (Atom)carbonAtomScene.Instantiate();
+		var atomNode = (AtomNode)carbonAtomScene.Instantiate();
 		AddChild(atomNode);
 		atomNode.Position = new Vector2(500, 0);
 
@@ -63,18 +65,27 @@ public partial class AtomSimulator : Node
 
 
 	public Callable atomHovered;
-	void OnAtomHovered(Atom atom)
+	void OnAtomHovered(AtomNode atom)
 	{
 		
 	}
 
 	public Callable atomClicked;
-	void OnAtomClicked(Atom atom)
+	void OnAtomClicked(AtomNode atom)
 	{
-		
+		DeleteAtom(atom);
 	}
 
-	AtomInstance CreateAtomInstance(Atom atomNode)
+	void DeleteAtom(AtomNode atom)
+	{
+		var atm = atomPhysics.GetAtomByNode(atom);
+		if (atm != null)
+		{
+			atomPhysics.RemoveAtom(atm);
+		}
+	}
+
+	AtomInstance CreateAtomInstance(AtomNode atomNode)
 	{
 		atomNode.Set("atomHovered", atomHovered);
 		atomNode.Set("atomClicked", atomClicked);
@@ -90,7 +101,8 @@ public partial class AtomSimulator : Node
 			charge = atomNode.Get("charge").As<float>(),
 			mass = atomNode.Get("mass").As<float>(),
 			radius = atomNode.Get("radius").As<float>(),
-			node = atomNode
+			node = atomNode,
+			bonds = new List<AtomInstance>(),
 		};
 		return inst;
 	}
