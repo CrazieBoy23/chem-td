@@ -82,7 +82,7 @@ public class AtomPhysics
 
 	public bool AddBond(AtomInstance atomA, AtomInstance atomB)
 	{
-		if (!validateBond(atomA, atomB)) return false;
+		if (!ValidateBond(atomA, atomB)) return false;
 		atomA.bonds.Add(atomB);
 		atomB.bonds.Add(atomA);
 		return true;
@@ -90,44 +90,188 @@ public class AtomPhysics
 
 	public void Simulate(float delta)
 	{
-		/*
-		here is the old gdscript code for reference
-		for atom_a in bonds.keys():
-		for atom_b in bonds[atom_a]:
-			var pair_key = _get_pair_key(atom_a, atom_b)
-			if processed_pairs.has(pair_key):
-				continue
-			processed_pairs[pair_key] = true
-
-			var dist = (atom_a.position - atom_b.position).length()
-			if dist > _get_mean_bond_length(atom_a, atom_b) * break_bond_distance:
-				break_bond(atom_a, atom_b)
-			else:
-				_apply_bond_force(atom_a, atom_b)
-		*/
-
-
-		// update positions of atoms in each chunk
+		// --- Bond Processing ---
+		var processedPairs = new HashSet<string>();
 		foreach (var kvp in chunks)
 		{
-			foreach (var atom in kvp.Value)
+			foreach (var atomA in kvp.Value.ToList())
 			{
-				ChunkCoord oldChunk = kvp.Key;
-				atom.position += atom.velocity * delta;
-				ChunkCoord newChunk = GetChunkCoord(atom.position);
-				if (oldChunk != newChunk)
+				foreach (var atomB in atomA.bonds.ToList())
 				{
-					// Atom has moved to a new chunk, remove it from the old chunk
-					kvp.Value.Remove(atom);
-					if (kvp.Value.Count == 0)
-					{
-						chunks.Remove(kvp.Key);
-					}
+					string pairKey = GetPairKey(atomA, atomB);
+					if (processedPairs.Contains(pairKey))
+						continue;
+					processedPairs.Add(pairKey);
 
-					// Add it to the new chunk
-					AddAtomToChunk(atom);
-					GD.Print($"Atom moved from {oldChunk} to {newChunk}");
+					float dist = (atomA.position - atomB.position).Length();
+					float meanBondLength = GetMeanBondLength(atomA, atomB);
+					if (dist > meanBondLength * breakBondDistance)
+					{
+						BreakBond(atomA, atomB);
+					}
+					else
+					{
+						ApplyBondForce(atomA, atomB);
+					}
 				}
+			}
+		}
+
+		// --- Repel force (using 3x3 chunks) ---
+		var allChunkKeys = chunks.Keys.ToList();
+		processedPairs.Clear();
+		foreach (var chunkKey in allChunkKeys)
+		{
+			if (!chunks.ContainsKey(chunkKey)) continue;
+			var chunkAtoms = chunks[chunkKey].ToList();
+			for (int i = 0; i < chunkAtoms.Count; i++)
+			{
+				var atomA = chunkAtoms[i];
+				for (int offsetX = -1; offsetX <= 1; offsetX++)
+				{
+					for (int offsetY = -1; offsetY <= 1; offsetY++)
+					{
+						var neighborKey = new ChunkCoord(chunkKey.X + offsetX, chunkKey.Y + offsetY);
+						if (!chunks.ContainsKey(neighborKey)) continue;
+						var neighborAtoms = chunks[neighborKey];
+						foreach (var atomB in neighborAtoms)
+						{
+							if (atomA == atomB) continue;
+							string pairKey = GetPairKey(atomA, atomB);
+							if (processedPairs.Contains(pairKey)) continue;
+							processedPairs.Add(pairKey);
+							ApplyRepelForce(atomA, atomB);
+							ResolveCollision(atomA, atomB);
+						}
+					}
+				}
+			}
+		}
+
+		// --- Update atom positions and velocities ---
+		UpdateAtomPositions(delta);
+
+		// --- Reassign atoms to new chunks ---
+		var newChunks = new Dictionary<ChunkCoord, AtomHolder>();
+		foreach (var chunkAtoms in chunks.Values)
+		{
+			foreach (var atom in chunkAtoms)
+			{
+				var newChunk = GetChunkCoord(atom.position);
+				if (!newChunks.ContainsKey(newChunk))
+					newChunks[newChunk] = new AtomHolder();
+				newChunks[newChunk].Add(atom);
+			}
+		}
+		chunks = newChunks;
+	}
+
+	// --- PRIVATE HELPERS ---
+	private string GetPairKey(AtomInstance atomA, AtomInstance atomB)
+	{
+		int idA = atomA.GetHashCode();
+		int idB = atomB.GetHashCode();
+		return idA < idB ? $"{idA}:{idB}" : $"{idB}:{idA}";
+	}
+
+	private float GetMeanBondLength(AtomInstance atomA, AtomInstance atomB)
+	{
+		return (atomA.r_e + atomB.r_e) * 0.5f;
+	}
+
+	private void BreakBond(AtomInstance atomA, AtomInstance atomB)
+	{
+		atomA.bonds.Remove(atomB);
+		atomB.bonds.Remove(atomA);
+	}
+
+	private void ApplyBondForce(AtomInstance atomA, AtomInstance atomB)
+	{
+		var pos1 = atomA.position;
+		var pos2 = atomB.position;
+		var rVec = pos2 - pos1;
+		float r = rVec.Length();
+		if (r == 0) return;
+		var direction = rVec.Normalized();
+
+		float a = atomA.a;
+		float D_e = atomA.D_e;
+		float r_e = atomA.r_e;
+		float expTerm = Mathf.Exp(-a * (r - r_e));
+		float forceMag = 2 * a * D_e * (1 - expTerm) * expTerm;
+
+		if (r > r_e * 1.5f)
+			forceMag += (r - r_e) * (atomA.extended_modifier + atomB.extended_modifier) * 0.5f;
+
+		var force = direction * forceMag;
+
+		var relativeVelocity = atomB.velocity - atomA.velocity;
+		float bondDamping = 0.5f; // You may want to expose this as a parameter
+		var dampingForce = direction * relativeVelocity.Dot(direction) * bondDamping;
+
+		atomA.velocity += (dampingForce + force) / atomA.mass;
+		atomB.velocity -= (dampingForce + force) / atomB.mass;
+	}
+
+	private void ApplyRepelForce(AtomInstance atomA, AtomInstance atomB)
+	{
+		var rVec = atomB.position - atomA.position;
+		float r = rVec.Length();
+		if (r == 0) return;
+		var direction = rVec.Normalized();
+		float k = 1000.0f;
+		float q1 = atomA.charge;
+		float q2 = atomB.charge;
+		float forceMag = k * q1 * q2 / (r * r);
+		if (forceMag <= 0) return;
+		var force = direction * forceMag;
+		atomB.velocity += force / atomB.mass;
+		atomA.velocity -= force / atomA.mass;
+	}
+
+	private void ResolveCollision(AtomInstance atomA, AtomInstance atomB)
+	{
+		var delta = atomB.position - atomA.position;
+		float dist = delta.Length();
+		float minDist = atomA.radius + atomB.radius;
+
+		if (dist == 0)
+		{
+			delta = new Vector2(GD.Randf(), GD.Randf()).Normalized();
+			dist = 0.001f;
+		}
+
+		if (dist < minDist)
+		{
+			float overlap = minDist - dist;
+			var direction = delta / dist;
+			// Push each atom away half the overlap:
+			atomA.position -= direction * overlap * 0.5f;
+			atomB.position += direction * overlap * 0.5f;
+
+			// Bounce effect (optional):
+			var relativeVelocity = atomB.velocity - atomA.velocity;
+			float velAlongNormal = relativeVelocity.Dot(direction);
+			if (velAlongNormal > 0) return;
+
+			float restitution = 0.8f;
+			float impulse = (-(1 + restitution) * velAlongNormal) / 2.0f;
+			var impulseVec = direction * impulse;
+
+			atomA.velocity -= impulseVec;
+			atomB.velocity += impulseVec;
+		}
+	}
+
+	private void UpdateAtomPositions(float delta)
+	{
+		float atomDamping = 0.95f; // You may want to expose this as a parameter
+		foreach (var chunkAtoms in chunks.Values)
+		{
+			foreach (var atom in chunkAtoms)
+			{
+				atom.position += atom.velocity * delta;
+				atom.velocity *= atomDamping;
 			}
 		}
 	}
@@ -148,7 +292,7 @@ public class AtomPhysics
 	{
 		return (atomA.position - atomB.position).Length();
 	}
-	bool validateBond(AtomInstance atomA, AtomInstance atomB)
+	bool ValidateBond(AtomInstance atomA, AtomInstance atomB)
 	{
 		if (atomA == null || atomB == null || atomA == atomB)
 		{
@@ -158,7 +302,7 @@ public class AtomPhysics
 		{
 			return false; // Bond already exists
 		}
-		if (Mathf.Lerp(atomA.r_e, atomB.r_e, 0.5f) * breakBondDistance <= Distance(atomA, atomB))
+		if (GetMeanBondLength(atomA, atomB) * breakBondDistance <= Distance(atomA, atomB))
 		{
 			return false; // Bond distance is too large
 		}

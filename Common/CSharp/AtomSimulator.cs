@@ -24,13 +24,29 @@ public partial class AtomSimulator : Node
 
 	public override void _Ready()
 	{
-		var atomNode = (AtomNode)carbonAtomScene.Instantiate();
-		AddChild(atomNode);
-		atomNode.Position = new Vector2(500, 0);
+		var atomNode1 = (AtomNode)carbonAtomScene.Instantiate();
+		AddChild(atomNode1);
+		atomNode1.Position = new Vector2(350, 200);
+
+		var atomNode2 = (AtomNode)carbonAtomScene.Instantiate();
+		AddChild(atomNode2);
+		atomNode2.Position = new Vector2(470, 200);
+
+		var atomNode3 = (AtomNode)carbonAtomScene.Instantiate();
+		AddChild(atomNode3);
+		atomNode3.Position = new Vector2(410, 270);
 
 		
-		var atom = CreateAtomInstance(atomNode);
-		atomPhysics.AddAtomToChunk(atom);
+		var atom1 = CreateAtomInstance(atomNode1);
+		var atom2 = CreateAtomInstance(atomNode2);
+		var atom3 = CreateAtomInstance(atomNode3);
+		atomPhysics.AddAtomToChunk(atom1);
+		atomPhysics.AddAtomToChunk(atom2);
+		atomPhysics.AddAtomToChunk(atom3);
+
+		atomPhysics.AddBond(atom1, atom2);
+		atomPhysics.AddBond(atom1, atom3);
+		atomPhysics.AddBond(atom2, atom3);
 
 		foreach (var chHolder in atomPhysics.chunks.Values)
 		{
