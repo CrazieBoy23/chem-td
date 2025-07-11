@@ -45,8 +45,8 @@ void main() {
 
     // Find which chunk this atom belongs to
     int my_chunk = -1;
-    int num_chunks = int(length(chunk_info) / 2);
-    for (int c = 0; c < num_chunks; ++c) {
+    int num_chunks = chunk_info[0];
+    for (int c = 1; c <= num_chunks; ++c) {
         int start = chunk_info[c * 2 + 0];
         int count = chunk_info[c * 2 + 1];
         if (atom_index >= uint(start) && atom_index < uint(start + count)) {
