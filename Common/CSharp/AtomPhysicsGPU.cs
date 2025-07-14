@@ -12,12 +12,26 @@ public static class AtomPhysicsGPU
         public int count;
     }
 
-    public static void Simulate(Dictionary<Vector2I, List<AtomInstance>> chunks)
+    // Cached GPU resources
+    private static RenderingDevice rd;
+    private static Godot.Rid shader;
+    private static Godot.Rid pipeline;
+    private static bool initialized = false;
+
+    private static void EnsureInitialized()
     {
-        var rd = RenderingServer.CreateLocalRenderingDevice();
+        if (initialized) return;
+        rd = RenderingServer.CreateLocalRenderingDevice();
         var shaderFile = GD.Load<RDShaderFile>(ComputeShaderPath);
         var shaderSpirV = shaderFile.GetSpirV();
-        var shader = rd.ShaderCreateFromSpirV(shaderSpirV);
+        shader = rd.ShaderCreateFromSpirV(shaderSpirV);
+        pipeline = rd.ComputePipelineCreate(shader);
+        initialized = true;
+    }
+
+    public static void Simulate(Dictionary<Vector2I, List<AtomInstance>> chunks, float delta)
+    {
+        EnsureInitialized();
 
         // Flatten atoms and build chunk info
         var allAtoms = new List<AtomInstance>();
@@ -29,8 +43,36 @@ public static class AtomPhysicsGPU
             chunkInfos.Add(new ChunkInfo { startIndex = start, count = kvp.Value.Count });
         }
 
+        // Flatten bonds index and count
+        var bondIndices = new List<int>();
+        var bondOffset = new List<int>();
+        var bondCount = new List<int>();
+        foreach (var atom in allAtoms)
+        {
+            bondOffset.Add(bondIndices.Count);
+            bondCount.Add(atom.bonds.Count);
+            foreach (var bond in atom.bonds)
+                bondIndices.Add(allAtoms.IndexOf(bond));
+        }
+
+        // define storage buffers for atom data, chunk info, and bonds
+        int[] bondIndicesData = bondIndices.ToArray();
+        int[] bondOffsetData = bondOffset.ToArray();
+        int[] bondCountData = bondCount.ToArray();
+
+        // Convert lists to byte arrays
+        byte[] bondIndicesBytes = new byte[bondIndices.Count * sizeof(int)];
+        byte[] bondOffsetBytes = new byte[bondOffset.Count * sizeof(int)];
+        byte[] bondCountBytes = new byte[bondCount.Count * sizeof(int)];
+
+        // Copy bond data to byte arrays
+        Buffer.BlockCopy(bondIndicesData, 0, bondIndicesBytes, 0, bondIndicesBytes.Length);
+        Buffer.BlockCopy(bondOffsetData, 0, bondOffsetBytes, 0, bondOffsetBytes.Length);
+        Buffer.BlockCopy(bondCountData, 0, bondCountBytes, 0, bondCountBytes.Length);
+
         // Atom buffer: [pos.x, pos.y, vel.x, vel.y, mass, charge, radius, ...]
         float[] atomData = new float[allAtoms.Count * 8];
+        float[] additionalData = new float[allAtoms.Count * 4];
         for (int i = 0; i < allAtoms.Count; i++)
         {
             var atom = allAtoms[i];
@@ -42,24 +84,35 @@ public static class AtomPhysicsGPU
             atomData[i * 8 + 5] = atom.charge;
             atomData[i * 8 + 6] = atom.radius;
             atomData[i * 8 + 7] = 0;
+
+            additionalData[i * 4 + 0] = atom.D_e;
+            additionalData[i * 4 + 1] = atom.a;
+            additionalData[i * 4 + 2] = atom.r_e;
+            additionalData[i * 4 + 3] = atom.extended_modifier;
         }
         byte[] atomBytes = new byte[atomData.Length * sizeof(float)];
+        byte[] additionalBytes = new byte[additionalData.Length * sizeof(float)];
         Buffer.BlockCopy(atomData, 0, atomBytes, 0, atomBytes.Length);
+        Buffer.BlockCopy(additionalData, 0, additionalBytes, 0, additionalBytes.Length);
 
         // Chunk info buffer: [startIndex, count] for each chunk
-        int[] chunkInfoData = new int[(chunkInfos.Count+1) * 2];
+        int[] chunkInfoData = new int[chunkInfos.Count * 2 + 1];
         for (int i = 1; i <= chunkInfos.Count; i++)
         {
-            chunkInfoData[i * 2 + 0] = chunkInfos[i-1].startIndex;
-            chunkInfoData[i * 2 + 1] = chunkInfos[i-1].count;
+            chunkInfoData[i * 2 - 1] = chunkInfos[i - 1].startIndex;
+            chunkInfoData[i * 2] = chunkInfos[i - 1].count;
         }
         chunkInfoData[0] = chunkInfos.Count; // Store the number of chunks at the start
-        byte[] chunkInfoBytes = new byte[(chunkInfoData.Length) * sizeof(int)];
+        byte[] chunkInfoBytes = new byte[chunkInfoData.Length * sizeof(int)];
         Buffer.BlockCopy(chunkInfoData, 0, chunkInfoBytes, 0, chunkInfoBytes.Length);
 
-        // Create storage buffers
+        // Create storage buffers (these are still per-frame, but much cheaper than pipeline/shader)
         var atomBuffer = rd.StorageBufferCreate((uint)atomBytes.Length, atomBytes);
+        var additionalBuffer = rd.StorageBufferCreate((uint)additionalBytes.Length, additionalBytes);
         var chunkInfoBuffer = rd.StorageBufferCreate((uint)chunkInfoBytes.Length, chunkInfoBytes);
+        var bondIndicesBuffer = rd.StorageBufferCreate((uint)bondIndicesBytes.Length, bondIndicesBytes);
+        var bondOffsetBuffer = rd.StorageBufferCreate((uint)bondOffsetBytes.Length, bondOffsetBytes);
+        var bondCountBuffer = rd.StorageBufferCreate((uint)bondCountBytes.Length, bondCountBytes);
 
         // Uniforms
         var atomUniform = new RDUniform
@@ -69,18 +122,45 @@ public static class AtomPhysicsGPU
         };
         atomUniform.AddId(atomBuffer);
 
-        var chunkUniform = new RDUniform
+        var additionalUniform = new RDUniform
         {
             UniformType = RenderingDevice.UniformType.StorageBuffer,
             Binding = 1
         };
+        additionalUniform.AddId(additionalBuffer);
+
+        var chunkUniform = new RDUniform
+        {
+            UniformType = RenderingDevice.UniformType.StorageBuffer,
+            Binding = 2
+        };
         chunkUniform.AddId(chunkInfoBuffer);
 
-        var uniforms = new Godot.Collections.Array<Godot.RDUniform> { atomUniform, chunkUniform };
+        var bondIndicesUniform = new RDUniform
+        {
+            UniformType = RenderingDevice.UniformType.StorageBuffer,
+            Binding = 3
+        };
+        bondIndicesUniform.AddId(bondIndicesBuffer);
+
+        var bondOffsetUniform = new RDUniform
+        {
+            UniformType = RenderingDevice.UniformType.StorageBuffer,
+            Binding = 4
+        };
+        bondOffsetUniform.AddId(bondOffsetBuffer);
+
+        var bondCountUniform = new RDUniform
+        {
+            UniformType = RenderingDevice.UniformType.StorageBuffer,
+            Binding = 5
+        };
+        bondCountUniform.AddId(bondCountBuffer);
+
+        var uniforms = new Godot.Collections.Array<Godot.RDUniform> { atomUniform, additionalUniform, chunkUniform, bondIndicesUniform, bondOffsetUniform, bondCountUniform };
         var uniformSet = rd.UniformSetCreate(uniforms, shader, 0);
 
         // Compute pipeline
-        var pipeline = rd.ComputePipelineCreate(shader);
         var computeList = rd.ComputeListBegin();
         rd.ComputeListBindComputePipeline(computeList, pipeline);
         rd.ComputeListBindUniformSet(computeList, uniformSet, 0);
@@ -106,11 +186,14 @@ public static class AtomPhysicsGPU
             allAtoms[i].velocity = new Vector2(output[i * 8 + 2], output[i * 8 + 3]);
         }
 
-        // Free resources
+        // Free only per-frame resources
         rd.FreeRid(atomBuffer);
+        rd.FreeRid(additionalBuffer);
         rd.FreeRid(chunkInfoBuffer);
-        rd.FreeRid(pipeline);
-        rd.FreeRid(shader);
-        rd.Free();
+        rd.FreeRid(bondIndicesBuffer);
+        rd.FreeRid(bondOffsetBuffer);
+        rd.FreeRid(bondCountBuffer);
+        // Do NOT free pipeline, shader, or device here! GOT ME?!
+        return;
     }
 }

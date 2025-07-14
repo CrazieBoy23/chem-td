@@ -70,14 +70,6 @@ public partial class AtomSimulator : Node2D
 		atomPhysics.AddBond(atom1, atom2);
 		atomPhysics.AddBond(atom1, atom3);
 		atomPhysics.AddBond(atom2, atom3);
-
-		foreach (var chHolder in atomPhysics.chunks.Values)
-		{
-			foreach (var atm in chHolder)
-			{
-				GD.Print($"Atom {atm.maxConnections}");
-			}
-		}
 	}
 
 	public override void _PhysicsProcess(double delta)

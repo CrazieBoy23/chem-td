@@ -14,6 +14,10 @@ config/name="ChemTd"
 run/main_scene="uid://1ehnn3aek5bh"
 config/features=PackedStringArray("4.4", "C#", "Forward Plus")
 
+[debug]
+
+settings/stdout/print_fps=true
+
 [dotnet]
 
 project/assembly_name="ChemTd"

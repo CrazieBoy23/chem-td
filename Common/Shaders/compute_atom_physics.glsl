@@ -7,8 +7,22 @@ layout(set = 0, binding = 0, std430) restrict buffer AtomBuffer {
     float atom_data[];
 };
 
-layout(set = 0, binding = 1, std430) restrict buffer ChunkInfoBuffer {
+layout(set = 0, binding = 1, std430) restrict buffer AdditionalBuffer {
+    float additional_data[];
+};
+
+layout(set = 0, binding = 2, std430) restrict buffer ChunkInfoBuffer {
     int chunk_info[];
+};
+
+layout(set = 0, binding = 3, std430) restrict buffer BondIndicesBuffer {
+    int bond_indices[];
+};
+layout(set = 0, binding = 4, std430) restrict buffer BondOffsetBuffer {
+    int bond_offset[];
+};
+layout(set = 0, binding = 5, std430) restrict buffer BondCountBuffer {
+    int bond_count[];
 };
 
 // Helper to get atom data
@@ -32,6 +46,24 @@ void set_atom(uint idx, float pos_x, float pos_y, float vel_x, float vel_y) {
     atom_data[base + 3] = vel_y;
 }
 
+void get_mean_atributes(uint idxa, uint idxb, out float D_e, out float a, out float r_e, out float extended_modifier) {
+    float D_e1 = additional_data[idxa * 4 + 0];
+    float a1 = additional_data[idxa * 4 + 1];
+    float r_e1 = additional_data[idxa * 4 + 2];
+    float extended_modifier1 = additional_data[idxa * 4 + 3];
+
+    float D_e2 = additional_data[idxb * 4 + 0];
+    float a2 = additional_data[idxb * 4 + 1];
+    float r_e2 = additional_data[idxb * 4 + 2];
+    float extended_modifier2 = additional_data[idxb * 4 + 3];
+
+    // Calculate mean attributes
+    D_e = (D_e1 + D_e2) / 2.0;
+    a = (a1 + a2) / 2.0;
+    r_e = (r_e1 + r_e2) / 2.0;
+    extended_modifier = (extended_modifier1 + extended_modifier2) / 2.0;
+}
+
 void main() {
     uint atom_index = gl_GlobalInvocationID.x;
     uint base = atom_index * 8;
@@ -43,12 +75,54 @@ void main() {
     float charge = atom_data[base + 5];
     float radius = atom_data[base + 6];
 
+    float D_e = additional_data[0]; 
+    float a = additional_data[1];
+    float r_e = additional_data[2];
+    float extended_modifier = additional_data[3];
+
+    vec2 pos = vec2(pos_x, pos_y);
+    vec2 vel = vec2(vel_x, vel_y);
+
+    // Apply bond forces
+    int bond_start = bond_offset[atom_index];
+    int bond_count = bond_count[atom_index];
+    for (int i = 0; i < bond_count; ++i) {
+        int bond_idx = bond_indices[bond_start + i];
+        if (bond_idx < 0) continue; // Skip invalid bonds
+
+        // Get bonded atom data
+        float b_pos_x, b_pos_y, b_vel_x, b_vel_y, b_mass, b_charge, b_radius;
+        get_atom(uint(bond_idx), b_pos_x, b_pos_y, b_vel_x, b_vel_y, b_mass, b_charge, b_radius);
+
+        // Calculate bond attributes
+        float bond_D_e, bond_a, bond_r_e, bond_extended_modifier;
+        get_mean_atributes(atom_index, uint(bond_idx), bond_D_e, bond_a, bond_r_e, bond_extended_modifier);
+
+        // Calculate bond force
+        vec2 b_pos = vec2(b_pos_x, b_pos_y);
+        vec2 b_vel = vec2(b_vel_x, b_vel_y);
+        vec2 r_vec = b_pos - pos;
+        float r = length(r_vec);
+        vec2 r_dir = normalize(r_vec);
+
+        float exp_term = exp(-a * (r - r_e));
+        float force_mag = 2 * a * D_e * exp_term * (1 - exp_term);
+
+        if (r > r_e * 1.5) {
+            force_mag += (r - r_e) * bond_extended_modifier;
+        }
+
+        // Apply force
+        vec2 force = r_dir * force_mag;
+        vel += force / mass; // Update velocity based on force
+    }    
+
     // Find which chunk this atom belongs to
     int my_chunk = -1;
     int num_chunks = chunk_info[0];
     for (int c = 1; c <= num_chunks; ++c) {
-        int start = chunk_info[c * 2 + 0];
-        int count = chunk_info[c * 2 + 1];
+        int start = chunk_info[c * 2 - 1];
+        int count = chunk_info[c * 2];
         if (atom_index >= uint(start) && atom_index < uint(start + count)) {
             my_chunk = c;
             break;
@@ -57,13 +131,10 @@ void main() {
     if (my_chunk == -1) return;
 
     // Repel and collision with atoms in this chunk and neighbors
-    vec2 pos = vec2(pos_x, pos_y);
-    vec2 vel = vec2(vel_x, vel_y);
     for (int dc = -1; dc <= 1; ++dc) {
         int neighbor_chunk = my_chunk + dc;
-        if (neighbor_chunk < 0 || neighbor_chunk >= num_chunks) continue;
-        int n_start = chunk_info[neighbor_chunk * 2 + 0];
-        int n_count = chunk_info[neighbor_chunk * 2 + 1];
+        int n_start = chunk_info[neighbor_chunk * 2 - 1];
+        int n_count = chunk_info[neighbor_chunk * 2];
         for (int j = 0; j < n_count; ++j) {
             uint other_idx = uint(n_start + j);
             if (other_idx == atom_index) continue;

@@ -24,7 +24,6 @@ public class AtomInstance
 public class AtomPhysics
 {
 	public Dictionary<ChunkCoord, AtomHolder> chunks;
-
 	Vector2 chunkSize;
 	float breakBondDistance;
 
@@ -33,7 +32,6 @@ public class AtomPhysics
 		this.chunkSize = chunkSize;
 		this.breakBondDistance = breakBondDistance;
 		chunks = new Dictionary<ChunkCoord, AtomHolder>();
-		GD.Print("break bond distance: " + breakBondDistance);
 	}
 
 	public bool AddAtomToChunk(AtomInstance atom)
@@ -92,21 +90,21 @@ public class AtomPhysics
 	public void Simulate(float delta)
 	{
 		// AtomPhysicsCPU.Simulate(chunks);
-		AtomPhysicsGPU.Simulate(chunks);
+		AtomPhysicsGPU.Simulate(chunks, delta);
 
-		// --- Update atom positions and velocities ---
 		UpdateAtomPositions(delta);
 
 		// --- Reassign atoms to new chunks ---
-		foreach (var kvp in chunks)
+		var chunkKeys = chunks.Keys.ToList();
+		foreach (var kvp in chunkKeys)
 		{
-			var atoms = kvp.Value.ToList();
+			var atoms = chunks[kvp].ToList();
 			foreach (var atom in atoms)
 			{
 				var newChunk = GetChunkCoord(atom.position);
-				if (newChunk != kvp.Key)
+				if (newChunk != kvp)
 				{
-					chunks[kvp.Key].Remove(atom); // Remove from old chunk
+					chunks[kvp].Remove(atom); // Remove from old chunk
 					AddAtomToChunk(atom); // Add to new chunk
 				}
 
@@ -149,7 +147,6 @@ public class AtomPhysics
 			}
 		}
 	}
-	
 
 	// helpers
 	public AtomInstance GetAtomByNode(Node2D node)
@@ -179,7 +176,6 @@ public class AtomPhysics
 			GD.Print("not contains");
 			return false; // Bond already exists
 		}
-		GD.Print(breakBondDistance);
 		if (GetMeanBondLength(atomA, atomB) * breakBondDistance <= Distance(atomA, atomB))
 		{
 			GD.Print("too far");
