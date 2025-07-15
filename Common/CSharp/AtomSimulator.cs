@@ -70,7 +70,7 @@ public partial class AtomSimulator : Node2D
 			new Callable(this, nameof(SpawnAtom)));
 
 		var atom1 = CreateAtomInstance(carbonAtomScene, new Vector2(350, 200));
-		for (int i = 1; i < 2250; i++)
+		for (int i = 1; i < 1000; i++)
 		{
 			var atom = CreateAtomInstance(carbonAtomScene, new Vector2(350 + i * 100, 300));
 			atomPhysics.AddBond(atom1, atom);

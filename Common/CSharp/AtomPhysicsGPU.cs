@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 public static class AtomPhysicsGPU
 {
@@ -36,12 +37,41 @@ public static class AtomPhysicsGPU
         // Flatten atoms and build chunk info
         var allAtoms = new List<AtomInstance>();
         var chunkInfos = new List<ChunkInfo>();
-        foreach (var kvp in chunks)
+
+
+        // square array for 2d packing
+        Vector2I minc = chunks.Keys.First();
+        Vector2I maxc = chunks.Keys.First();
+        foreach (var pos in chunks.Keys)
         {
-            int start = allAtoms.Count;
-            allAtoms.AddRange(kvp.Value);
-            chunkInfos.Add(new ChunkInfo { startIndex = start, count = kvp.Value.Count });
+            if (pos.X < minc.X) minc.X = pos.X;
+            if (pos.Y < minc.Y) minc.Y = pos.Y;
+            if (pos.X > maxc.X) maxc.X = pos.X;
+            if (pos.Y > maxc.Y) maxc.Y = pos.Y;
         }
+
+        for (int y = minc.Y; y <= maxc.Y; y++)
+        {
+            for (int x = minc.X; x <= maxc.X; x++)
+            {
+                var chunkKey = new Vector2I(x, y);
+                if (chunks.TryGetValue(chunkKey, out var atomList))
+                {
+                    int start = allAtoms.Count;
+                    allAtoms.AddRange(atomList);
+                    chunkInfos.Add(new ChunkInfo { startIndex = start, count = atomList.Count });
+                }
+            }
+        }
+        int rowCount = maxc.Y - minc.Y + 1;
+        int colCount = maxc.X - minc.X + 1;
+
+        // foreach (var kvp in chunks)
+        // {
+        //     int start = allAtoms.Count;
+        //     allAtoms.AddRange(kvp.Value);
+        //     chunkInfos.Add(new ChunkInfo { startIndex = start, count = kvp.Value.Count });
+        // }
 
         // Flatten bonds index and count
         var bondIndices = new List<int>();
@@ -96,13 +126,15 @@ public static class AtomPhysicsGPU
         Buffer.BlockCopy(additionalData, 0, additionalBytes, 0, additionalBytes.Length);
 
         // Chunk info buffer: [startIndex, count] for each chunk
-        int[] chunkInfoData = new int[chunkInfos.Count * 2 + 1];
+        int[] chunkInfoData = new int[chunkInfos.Count * 2 + 2];
         for (int i = 1; i <= chunkInfos.Count; i++)
         {
-            chunkInfoData[i * 2 - 1] = chunkInfos[i - 1].startIndex;
+            chunkInfoData[i * 2 + 1] = chunkInfos[i - 1].startIndex;
             chunkInfoData[i * 2] = chunkInfos[i - 1].count;
         }
         chunkInfoData[0] = chunkInfos.Count; // Store the number of chunks at the start
+        chunkInfoData[1] = rowCount; // Store the row count at the start
+        
         byte[] chunkInfoBytes = new byte[chunkInfoData.Length * sizeof(int)];
         Buffer.BlockCopy(chunkInfoData, 0, chunkInfoBytes, 0, chunkInfoBytes.Length);
 

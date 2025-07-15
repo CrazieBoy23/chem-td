@@ -120,13 +120,13 @@ void main() {
         // Apply force
         vec2 force = r_dir * force_mag;
         vel += force / mass; // Update velocity based on force
-    }    
+    }
 
     // Find which chunk this atom belongs to
     int my_chunk = -1;
     int num_chunks = chunk_info[0];
     for (int c = 1; c <= num_chunks; ++c) {
-        int start = chunk_info[c * 2 - 1];
+        int start = chunk_info[c * 2 + 1];
         int count = chunk_info[c * 2];
         if (atom_index >= uint(start) && atom_index < uint(start + count)) {
             my_chunk = c;
@@ -135,53 +135,72 @@ void main() {
     }
     if (my_chunk == -1) return;
 
-    // Repel and collision with atoms in this chunk and neighbors
-    for (int dc = -1; dc <= 1; ++dc) {
-        int neighbor_chunk = my_chunk + dc;
-        int n_start = chunk_info[neighbor_chunk * 2 - 1];
-        int n_count = chunk_info[neighbor_chunk * 2];
-        for (int j = 0; j < n_count; ++j) {
-            uint other_idx = uint(n_start + j);
-            if (other_idx == atom_index) continue;
-            float o_pos_x, o_pos_y, o_vel_x, o_vel_y, o_mass, o_charge, o_radius;
-            get_atom(other_idx, o_pos_x, o_pos_y, o_vel_x, o_vel_y, o_mass, o_charge, o_radius);
-            vec2 o_pos = vec2(o_pos_x, o_pos_y);
-            vec2 o_vel = vec2(o_vel_x, o_vel_y);
-            vec2 r_vec = o_pos - pos;
-            float r = length(r_vec);
-            if(r != 0) {
-                vec2 direction = normalize(r_vec);
+    int chunk_count = chunk_info[0];
+    int chunk_rows = chunk_info[1];
+    int chunk_cols = chunk_count / chunk_rows;
 
-                // Electrostatic force calculation
-                float k = 1000.0;
-                float forceMag = k * charge * o_charge / (r * r);
+    // Figure out my chunk coordinates (X, Y)
+    int my_chunk_x = (my_chunk - 1) % chunk_cols;
+    int my_chunk_y = (my_chunk - 1) / chunk_cols;
 
-                if (forceMag <= 0) continue;
+    // 3x3 neighbor loop
+    for (int dy = -1; dy <= 1; ++dy) {
+        for (int dx = -1; dx <= 1; ++dx) {
+            int nx = my_chunk_x + dx;
+            int ny = my_chunk_y + dy;
 
-                vec2 force = direction * forceMag;
-                vel -= force / mass;
-            }
+            if (nx < 0 || ny < 0 || nx >= chunk_cols || ny >= chunk_rows) continue;
 
-            // Collision
-            float minDist = radius + o_radius;
-            if (r == 0){
-                r_vec = normalize(vec2(random(), random()));
-                r = 0.001; // Prevent division by zero
-            }
+            int neighbor_chunk = ny * chunk_cols + nx + 1;
+            if (neighbor_chunk < 1 || neighbor_chunk > chunk_count) continue;
 
-            if (r < minDist) {
-                float overlap = minDist - r;
-                vec2 direction = r_vec / r;
-                pos -= direction * overlap * 0.5;
+            int count = chunk_info[neighbor_chunk * 2];
+            int start = chunk_info[neighbor_chunk * 2 + 1];
 
-                // Simple bounce
-                vec2 relVel = o_vel - vel;
-                float velAlongNormal = dot(relVel, direction);
-                if (velAlongNormal <= 0) {
-                    float restitution = 0.8;
-                    float impulse = -(1.0 + restitution) * velAlongNormal / 2.0;
-                    vec2 impulseVec = direction * impulse;
-                    vel -= impulseVec / mass;
+            for (int j = 0; j < count; ++j) {
+                uint other_idx = uint(start + j);
+                if (other_idx == atom_index) continue;
+
+                float o_pos_x, o_pos_y, o_vel_x, o_vel_y, o_mass, o_charge, o_radius;
+                get_atom(other_idx, o_pos_x, o_pos_y, o_vel_x, o_vel_y, o_mass, o_charge, o_radius);
+                vec2 o_pos = vec2(o_pos_x, o_pos_y);
+                vec2 o_vel = vec2(o_vel_x, o_vel_y);
+                vec2 r_vec = o_pos - pos;
+                float r = length(r_vec);
+                if(r != 0) {
+                    vec2 direction = normalize(r_vec);
+
+                    // Electrostatic force calculation
+                    float k = 1000.0;
+                    float forceMag = k * charge * o_charge / (r * r);
+
+                    if (forceMag <= 0) continue;
+
+                    vec2 force = direction * forceMag;
+                    vel -= force / mass;
+                }
+
+                // Collision
+                float minDist = radius + o_radius;
+                if (r == 0){
+                    r_vec = normalize(vec2(random(), random()));
+                    r = 0.001; // Prevent division by zero
+                }
+
+                if (r < minDist) {
+                    float overlap = minDist - r;
+                    vec2 direction = r_vec / r;
+                    pos -= direction * overlap * 0.5;
+
+                    // Simple bounce
+                    vec2 relVel = o_vel - vel;
+                    float velAlongNormal = dot(relVel, direction);
+                    if (velAlongNormal <= 0) {
+                        float restitution = 0.8;
+                        float impulse = -(1.0 + restitution) * velAlongNormal / 2.0;
+                        vec2 impulseVec = direction * impulse;
+                        vel -= impulseVec / mass;
+                    }
                 }
             }
         }
