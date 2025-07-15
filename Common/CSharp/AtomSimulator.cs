@@ -157,5 +157,14 @@ public partial class AtomSimulator : Node2D
 				}
 			}
 		}
+
+		// draw chunk boundaries
+		foreach (var kvp in atomPhysics.chunks)
+		{
+			var chunkCoord = kvp.Key;
+			var chunkPos = new Vector2(chunkCoord.X * ChunkSize.X, chunkCoord.Y * ChunkSize.Y);
+			DrawRect(new Rect2(chunkPos, ChunkSize), Colors.LightGray, false);
+			DrawString(new SystemFont() , chunkPos + new Vector2(5, 5), $"({chunkCoord.X}, {chunkCoord.Y})");
+		}
 	}
 }

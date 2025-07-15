@@ -77,12 +77,23 @@ public static class AtomPhysicsGPU
         var bondIndices = new List<int>();
         var bondOffset = new List<int>();
         var bondCount = new List<int>();
+        // foreach (var atom in allAtoms)
+        // {
+        //     bondOffset.Add(bondIndices.Count);
+        //     bondCount.Add(atom.bonds.Count);
+        //     foreach (var bond in atom.bonds)
+        //         bondIndices.Add(allAtoms.IndexOf(bond));
+        // }
+        var atomToIndex = new Dictionary<AtomInstance, int>();
+        for (int i = 0; i < allAtoms.Count; i++)
+            atomToIndex[allAtoms[i]] = i;
+
         foreach (var atom in allAtoms)
         {
             bondOffset.Add(bondIndices.Count);
             bondCount.Add(atom.bonds.Count);
             foreach (var bond in atom.bonds)
-                bondIndices.Add(allAtoms.IndexOf(bond));
+                bondIndices.Add(atomToIndex[bond]);
         }
 
         // define storage buffers for atom data, chunk info, and bonds

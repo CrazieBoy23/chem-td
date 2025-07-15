@@ -1,6 +1,9 @@
 #[compute]
 #version 450
 
+#define COLLISION_PASSES 4
+
+
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
 layout(set = 0, binding = 0, std430) restrict buffer AtomBuffer {
@@ -144,62 +147,64 @@ void main() {
     int my_chunk_y = (my_chunk - 1) / chunk_cols;
 
     // 3x3 neighbor loop
-    for (int dy = -1; dy <= 1; ++dy) {
-        for (int dx = -1; dx <= 1; ++dx) {
-            int nx = my_chunk_x + dx;
-            int ny = my_chunk_y + dy;
+    for (int pass = 0; pass < COLLISION_PASSES; ++pass) {
+        for (int dy = -1; dy <= 1; ++dy) {
+            for (int dx = -1; dx <= 1; ++dx) {
+                int nx = my_chunk_x + dx;
+                int ny = my_chunk_y + dy;
 
-            if (nx < 0 || ny < 0 || nx >= chunk_cols || ny >= chunk_rows) continue;
+                if (nx < 0 || ny < 0 || nx >= chunk_cols || ny >= chunk_rows) continue;
 
-            int neighbor_chunk = ny * chunk_cols + nx + 1;
-            if (neighbor_chunk < 1 || neighbor_chunk > chunk_count) continue;
+                int neighbor_chunk = ny * chunk_cols + nx + 1;
+                if (neighbor_chunk < 1 || neighbor_chunk > chunk_count) continue;
 
-            int count = chunk_info[neighbor_chunk * 2];
-            int start = chunk_info[neighbor_chunk * 2 + 1];
+                int count = chunk_info[neighbor_chunk * 2];
+                int start = chunk_info[neighbor_chunk * 2 + 1];
 
-            for (int j = 0; j < count; ++j) {
-                uint other_idx = uint(start + j);
-                if (other_idx == atom_index) continue;
+                for (int j = 0; j < count; ++j) {
+                    uint other_idx = uint(start + j);
+                    if (other_idx == atom_index) continue;
 
-                float o_pos_x, o_pos_y, o_vel_x, o_vel_y, o_mass, o_charge, o_radius;
-                get_atom(other_idx, o_pos_x, o_pos_y, o_vel_x, o_vel_y, o_mass, o_charge, o_radius);
-                vec2 o_pos = vec2(o_pos_x, o_pos_y);
-                vec2 o_vel = vec2(o_vel_x, o_vel_y);
-                vec2 r_vec = o_pos - pos;
-                float r = length(r_vec);
-                if(r != 0) {
-                    vec2 direction = normalize(r_vec);
+                    float o_pos_x, o_pos_y, o_vel_x, o_vel_y, o_mass, o_charge, o_radius;
+                    get_atom(other_idx, o_pos_x, o_pos_y, o_vel_x, o_vel_y, o_mass, o_charge, o_radius);
+                    vec2 o_pos = vec2(o_pos_x, o_pos_y);
+                    vec2 o_vel = vec2(o_vel_x, o_vel_y);
+                    vec2 r_vec = o_pos - pos;
+                    float r = length(r_vec);
+                    if(r != 0) {
+                        vec2 direction = normalize(r_vec);
 
-                    // Electrostatic force calculation
-                    float k = 1000.0;
-                    float forceMag = k * charge * o_charge / (r * r);
+                        // Electrostatic force calculation
+                        float k = 1000.0;
+                        float forceMag = k * charge * o_charge / (r * r);
 
-                    if (forceMag <= 0) continue;
+                        if (forceMag <= 0) continue;
 
-                    vec2 force = direction * forceMag;
-                    vel -= force / mass;
-                }
+                        vec2 force = direction * forceMag;
+                        vel -= force / mass;
+                    }
 
-                // Collision
-                float minDist = radius + o_radius;
-                if (r == 0){
-                    r_vec = normalize(vec2(random(), random()));
-                    r = 0.001; // Prevent division by zero
-                }
+                    // Collision
+                    float minDist = radius + o_radius;
+                    if (r == 0){
+                        r_vec = normalize(vec2(random(), random()));
+                        r = 0.001; // Prevent division by zero
+                    }
 
-                if (r < minDist) {
-                    float overlap = minDist - r;
-                    vec2 direction = r_vec / r;
-                    pos -= direction * overlap * 0.5;
+                    if (r < minDist) {
+                        float overlap = minDist - r;
+                        vec2 direction = r_vec / r;
+                        pos -= direction * overlap * 0.5;
 
-                    // Simple bounce
-                    vec2 relVel = o_vel - vel;
-                    float velAlongNormal = dot(relVel, direction);
-                    if (velAlongNormal <= 0) {
-                        float restitution = 0.8;
-                        float impulse = -(1.0 + restitution) * velAlongNormal / 2.0;
-                        vec2 impulseVec = direction * impulse;
-                        vel -= impulseVec / mass;
+                        // Simple bounce
+                        vec2 relVel = o_vel - vel;
+                        float velAlongNormal = dot(relVel, direction);
+                        if (velAlongNormal <= 0) {
+                            float restitution = 0.8;
+                            float impulse = -(1.0 + restitution) * velAlongNormal / 2.0;
+                            vec2 impulseVec = direction * impulse;
+                            vel -= impulseVec / mass;
+                        }
                     }
                 }
             }
