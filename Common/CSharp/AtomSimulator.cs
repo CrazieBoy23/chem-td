@@ -36,6 +36,9 @@ public partial class AtomSimulator : Node2D
 	{
 		var atom1 = atomPhysics.GetAtomByNode(atom1n);
 		var atom2 = atomPhysics.GetAtomByNode(atom2n);
+		if (atom1.maxConnections <= atom1.bonds.Count ||
+			atom2.maxConnections <= atom2.bonds.Count)
+			return false;
 		return atomPhysics.AddBond(atom1, atom2);
 	}
 	public bool BreakBond(AtomNode atom1n, AtomNode atom2n)
@@ -45,10 +48,13 @@ public partial class AtomSimulator : Node2D
 		return atomPhysics.BreakBond(atom1, atom2);
 	}
 
-	public bool SpawnAtom(Vector2 spawnPos, AtomNode clickedAtom)
+	public bool SpawnAtom(Vector2 spawnPos, AtomNode clicked_atom)
 	{
+		var clickedAtom = atomPhysics.GetAtomByNode(clicked_atom);
+		if (clickedAtom.maxConnections <= clickedAtom.bonds.Count)
+			return false;
 		var inst = CreateAtomInstance(carbonAtomScene, spawnPos);
-		atomPhysics.AddBond(atomPhysics.GetAtomByNode(clickedAtom), inst);
+		atomPhysics.AddBond(atomPhysics.GetAtomByNode(clicked_atom), inst);
 
 		return true;
 	}
@@ -64,13 +70,14 @@ public partial class AtomSimulator : Node2D
 			new Callable(this, nameof(SpawnAtom)));
 
 		var atom1 = CreateAtomInstance(carbonAtomScene, new Vector2(350, 200));
-		var atom2 = CreateAtomInstance(carbonAtomScene, new Vector2(470, 200));
-		var atom3 = CreateAtomInstance(carbonAtomScene, new Vector2(410, 270));
-
-		atomPhysics.AddBond(atom1, atom2);
-		atomPhysics.AddBond(atom1, atom3);
-		atomPhysics.AddBond(atom2, atom3);
+		for (int i = 1; i < 2250; i++)
+		{
+			var atom = CreateAtomInstance(carbonAtomScene, new Vector2(350 + i * 100, 300));
+			atomPhysics.AddBond(atom1, atom);
+			atom1 = atom; // Chain atoms together
+		}
 	}
+
 
 	public override void _PhysicsProcess(double delta)
 	{

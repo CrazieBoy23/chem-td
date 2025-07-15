@@ -64,6 +64,11 @@ void get_mean_atributes(uint idxa, uint idxb, out float D_e, out float a, out fl
     extended_modifier = (extended_modifier1 + extended_modifier2) / 2.0;
 }
 
+float random() {
+    // Simple random number generator
+    return fract(sin(gl_GlobalInvocationID.x * 12.9898 + gl_GlobalInvocationID.y * 78.233) * 43758.5453);
+}
+
 void main() {
     uint atom_index = gl_GlobalInvocationID.x;
     uint base = atom_index * 8;
@@ -88,7 +93,7 @@ void main() {
     int bond_count = bond_count[atom_index];
     for (int i = 0; i < bond_count; ++i) {
         int bond_idx = bond_indices[bond_start + i];
-        if (bond_idx < 0) continue; // Skip invalid bonds
+        if (bond_idx < 0) continue;
 
         // Get bonded atom data
         float b_pos_x, b_pos_y, b_vel_x, b_vel_y, b_mass, b_charge, b_radius;
@@ -142,31 +147,41 @@ void main() {
             get_atom(other_idx, o_pos_x, o_pos_y, o_vel_x, o_vel_y, o_mass, o_charge, o_radius);
             vec2 o_pos = vec2(o_pos_x, o_pos_y);
             vec2 o_vel = vec2(o_vel_x, o_vel_y);
-            vec2 delta = o_pos - pos;
-            float dist = length(delta);
-            float minDist = radius + o_radius;
-            if (dist > 0.0) {
-                // Repel force (Coulomb-like)
+            vec2 r_vec = o_pos - pos;
+            float r = length(r_vec);
+            if(r != 0) {
+                vec2 direction = normalize(r_vec);
+
+                // Electrostatic force calculation
                 float k = 1000.0;
-                float forceMag = k * charge * o_charge / (dist * dist + 1e-4);
-                if (forceMag > 0.0) {
-                    vec2 force = normalize(delta) * forceMag;
-                    vel -= force / mass;
-                }
-                // Collision
-                if (dist < minDist) {
-                    float overlap = minDist - dist;
-                    vec2 direction = delta / dist;
-                    pos -= direction * overlap * 0.5;
-                    // Simple bounce
-                    vec2 relVel = o_vel - vel;
-                    float velAlongNormal = dot(relVel, direction);
-                    if (velAlongNormal < 0.0) {
-                        float restitution = 0.8;
-                        float impulse = -(1.0 + restitution) * velAlongNormal / 2.0;
-                        vec2 impulseVec = direction * impulse;
-                        vel -= impulseVec;
-                    }
+                float forceMag = k * charge * o_charge / (r * r);
+
+                if (forceMag <= 0) continue;
+
+                vec2 force = direction * forceMag;
+                vel -= force / mass;
+            }
+
+            // Collision
+            float minDist = radius + o_radius;
+            if (r == 0){
+                r_vec = normalize(vec2(random(), random()));
+                r = 0.001; // Prevent division by zero
+            }
+
+            if (r < minDist) {
+                float overlap = minDist - r;
+                vec2 direction = r_vec / r;
+                pos -= direction * overlap * 0.5;
+
+                // Simple bounce
+                vec2 relVel = o_vel - vel;
+                float velAlongNormal = dot(relVel, direction);
+                if (velAlongNormal <= 0) {
+                    float restitution = 0.8;
+                    float impulse = -(1.0 + restitution) * velAlongNormal / 2.0;
+                    vec2 impulseVec = direction * impulse;
+                    vel -= impulseVec / mass;
                 }
             }
         }
